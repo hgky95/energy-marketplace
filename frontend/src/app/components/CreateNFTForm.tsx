@@ -1,15 +1,21 @@
 import React, { useState } from "react";
+import { useContext } from "react";
+import { Web3 } from "./Web3";
+import { ethers } from "ethers";
 
 export default function CreateNFTForm() {
+  const { account, marketplace, web3Handler } = useContext(Web3);
   const [price, setPrice] = useState<string>("");
   const [energyAmount, setEnergyAmount] = useState<number>(0);
   const [energySource, setEnergySource] = useState<string>("Solar");
   const [location, setLocation] = useState<string>("Ontario - Farm 1");
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [ipfsHash, setIpfsHash] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [mintingSuccess, setMintingSuccess] = useState<boolean>(false);
 
-  const uploadToIPFS = async () => {
+  const PINATA_HOST = process.env.NEXT_PUBLIC_PINATA_GATEWAY + "/ipfs/";
+
+  const uploadToIPFS = async (): Promise<string | null> => {
     try {
       setIsLoading(true);
       setErrorMessage(null);
@@ -29,22 +35,70 @@ export default function CreateNFTForm() {
       const data = await response.json();
 
       if (response.ok) {
-        setIpfsHash(data.ipfsHash);
         console.log("Uploaded to IPFS, IPFS hash:", data.ipfsHash);
+        return data.ipfsHash;
       } else {
         throw new Error("Error uploading to IPFS");
       }
     } catch (error: any) {
       console.error("Error uploading to IPFS:", error);
       setErrorMessage("Failed to upload metadata to IPFS");
+      return null;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleMintNFT = async (e: React.FormEvent) => {
+  const mintNFT = async (hash: string) => {
+    try {
+      if (!account) {
+        setErrorMessage("Please connect your wallet.");
+        return;
+      }
+      if (!marketplace) {
+        setErrorMessage("Marketplace contract not loaded.");
+        return;
+      }
+
+      setIsLoading(true);
+      const NFT_URI = PINATA_HOST + hash;
+      const tx = await marketplace.mintAndList(
+        NFT_URI,
+        energyAmount,
+        ethers.parseEther(price)
+      );
+      await tx.wait();
+
+      console.log("NFT minted and listed successfully");
+      setMintingSuccess(true);
+    } catch (error) {
+      console.error("Error minting and listing NFT:", error);
+      setErrorMessage("Failed to mint and list the NFT. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await uploadToIPFS();
+    setErrorMessage(null);
+    setMintingSuccess(false);
+
+    try {
+      // Ensure wallet is connected
+      await web3Handler();
+
+      const hash = await uploadToIPFS();
+      if (!hash) {
+        setErrorMessage("IPFS upload failed. Please try again.");
+        return;
+      }
+
+      await mintNFT(hash);
+    } catch (error) {
+      console.error("Error in form submission:", error);
+      setErrorMessage("An error occurred. Please try again.");
+    }
   };
 
   return (
@@ -56,7 +110,7 @@ export default function CreateNFTForm() {
         <div className="mb-6">
           <p className="text-lg text-white">Current Energy Balance: 1000 kWh</p>
         </div>
-        <form className="space-y-4" onSubmit={handleMintNFT}>
+        <form className="space-y-4" onSubmit={handleSubmit}>
           <div>
             <label className="block text-white mb-2">Price (ETH)</label>
             <input
@@ -111,12 +165,12 @@ export default function CreateNFTForm() {
             className="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600"
             disabled={isLoading}
           >
-            {isLoading ? "Minting..." : "Mint NFT"}
+            {isLoading ? "Processing..." : "Mint NFT"}
           </button>
         </form>
-        {ipfsHash && (
+        {mintingSuccess && (
           <div className="mt-4">
-            <p className="text-green-400">Mint NFT successfully!</p>
+            <p className="text-green-400">NFT minted successfully!</p>
           </div>
         )}
         {errorMessage && <p className="text-red-500 mt-4">{errorMessage}</p>}
@@ -126,7 +180,7 @@ export default function CreateNFTForm() {
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-75 z-50">
           <div className="text-center">
             <div className="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-24 w-24 mb-4"></div>
-            <h2 className="text-white text-2xl font-semibold">Minting...</h2>
+            <h2 className="text-white text-2xl font-semibold">Processing...</h2>
           </div>
         </div>
       )}

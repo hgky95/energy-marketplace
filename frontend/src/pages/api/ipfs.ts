@@ -3,10 +3,10 @@ import { PinataSDK } from "pinata-web3";
 
 const pinata = new PinataSDK({
   pinataJwt: process.env.PINATA_JWT,
-  pinataGateway: process.env.PINATA_GATEWAY,
+  pinataGateway: process.env.NEXT_PUBLIC_PINATA_GATEWAY,
 });
 const PINATA_GROUP_ID = process.env.PINATA_GROUP_ID || "";
-const IMAGE_HOST_URL = process.env.PINATA_GATEWAY + "/ipfs/";
+const IMAGE_HOST_URL = process.env.NEXT_PUBLIC_PINATA_GATEWAY + "/ipfs/";
 const SOLAR_IMAGES = [
   "QmYESiiXXG4yepPygzfZR1aUEQQNXAMTM9uja22C9QZEN8",
   "Qmbx2JtJb4iLF6NXtE4TJnmojkGRRufDAy2HQpFKnoFLu2",
