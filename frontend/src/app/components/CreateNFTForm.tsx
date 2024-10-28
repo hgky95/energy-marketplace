@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useContext } from "react";
 import { Web3 } from "./Web3";
 import { ethers } from "ethers";
+import { RefreshCw } from "lucide-react";
 
 export default function CreateNFTForm() {
-  const { account, marketplace, web3Handler } = useContext(Web3);
+  const { account, marketplace, nft, web3Handler } = useContext(Web3);
   const [price, setPrice] = useState<string>("");
   const [energyAmount, setEnergyAmount] = useState<number>(0);
   const [energySource, setEnergySource] = useState<string>("Solar");
@@ -12,8 +13,31 @@ export default function CreateNFTForm() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [mintingSuccess, setMintingSuccess] = useState<boolean>(false);
+  const [energyBalance, setEnergyBalance] = useState<string>("0");
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
 
   const PINATA_HOST = process.env.NEXT_PUBLIC_PINATA_GATEWAY + "/ipfs/";
+
+  const fetchEnergyBalance = async () => {
+    if (account && nft) {
+      try {
+        setIsRefreshing(true);
+        const balance = await nft.getCurrentEnergy(account);
+        setEnergyBalance(balance.toString());
+      } catch (error) {
+        console.error("Error fetching energy balance:", error);
+        setErrorMessage("Failed to fetch energy balance");
+      } finally {
+        setIsRefreshing(false);
+      }
+    }
+  };
+
+  useEffect(() => {
+    fetchEnergyBalance();
+    // const intervalId = setInterval(fetchEnergyBalance, 30000);
+    // return () => clearInterval(intervalId);
+  }, [account, nft]);
 
   const uploadToIPFS = async (): Promise<string | null> => {
     try {
@@ -71,6 +95,7 @@ export default function CreateNFTForm() {
 
       console.log("NFT minted and listed successfully");
       setMintingSuccess(true);
+      await fetchEnergyBalance();
     } catch (error) {
       console.error("Error minting and listing NFT:", error);
       setErrorMessage("Failed to mint and list the NFT. Please try again.");
@@ -85,8 +110,12 @@ export default function CreateNFTForm() {
     setMintingSuccess(false);
 
     try {
-      // Ensure wallet is connected
       await web3Handler();
+
+      if (energyAmount > Number(energyBalance)) {
+        setErrorMessage("Insufficient energy balance");
+        return;
+      }
 
       const hash = await uploadToIPFS();
       if (!hash) {
@@ -107,8 +136,22 @@ export default function CreateNFTForm() {
         <h2 className="text-2xl font-bold text-white mb-6">
           Create New Energy NFT
         </h2>
-        <div className="mb-6">
-          <p className="text-lg text-white">Current Energy Balance: 1000 kWh</p>
+        <div className="mb-6 flex items-center space-x-2">
+          <p className="text-lg text-white">
+            Current Energy Balance: {energyBalance} kWh
+          </p>
+          <button
+            onClick={fetchEnergyBalance}
+            disabled={isRefreshing}
+            className="p-2 rounded-full hover:bg-white hover:bg-opacity-10 transition-colors"
+            title="Refresh balance"
+          >
+            <RefreshCw
+              className={`w-5 h-5 text-white ${
+                isRefreshing ? "animate-spin" : ""
+              }`}
+            />
+          </button>
         </div>
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div>
@@ -127,6 +170,7 @@ export default function CreateNFTForm() {
               type="number"
               value={energyAmount}
               onChange={(e) => setEnergyAmount(Number(e.target.value))}
+              max={Number(energyBalance)}
               className="w-full p-2 rounded-lg bg-white bg-opacity-20 text-white border border-white border-opacity-20"
               required
             />
