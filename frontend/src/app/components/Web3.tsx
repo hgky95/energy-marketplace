@@ -1,5 +1,4 @@
-// src/context/Web3.tsx
-import { useState, createContext } from "react";
+import { useState, createContext, useEffect } from "react";
 import { ethers } from "ethers";
 import MarketplaceAbi from "../../contracts/MarketplaceAbi.json";
 import NFTAbi from "../../contracts/NFTAbi.json";
@@ -25,7 +24,55 @@ export const Web3Provider = ({ children }: { children: React.ReactNode }) => {
   const [account, setAccount] = useState<string>("");
   const [marketplace, setMarketplace] = useState<ethers.Contract | null>(null);
   const [nft, setNFT] = useState<ethers.Contract | null>(null);
-  // const [loading, setLoading] = useState<boolean>(true);
+
+  // Load contracts in read-only mode on initial load
+  useEffect(() => {
+    const loadContractsReadOnly = async () => {
+      try {
+        // Use public provider for initial read-only access
+        const provider = new ethers.JsonRpcProvider(
+          process.env.NEXT_PUBLIC_RPC_URL || "http://localhost:8545"
+        );
+
+        const marketplace = new ethers.Contract(
+          MARKETPLACE_ADDRESS,
+          MarketplaceAbi,
+          provider
+        );
+        setMarketplace(marketplace);
+
+        const nft = new ethers.Contract(NFT_ADDRESS, NFTAbi, provider);
+        setNFT(nft);
+      } catch (error) {
+        console.error("Error loading contracts in read-only mode:", error);
+      }
+    };
+
+    loadContractsReadOnly();
+  }, []);
+
+  // Check if wallet is already connected
+  useEffect(() => {
+    const checkWalletConnection = async () => {
+      if (window.ethereum) {
+        try {
+          const accounts = await window.ethereum.request({
+            method: "eth_accounts",
+          });
+          if (accounts.length > 0) {
+            setAccount(accounts[0]);
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const signer = await provider.getSigner();
+            await loadContracts(signer);
+          }
+        } catch (error) {
+          console.error("Error checking wallet connection:", error);
+        }
+      }
+    };
+
+    checkWalletConnection();
+  }, []);
 
   const web3Handler = async () => {
     try {
@@ -44,8 +91,12 @@ export const Web3Provider = ({ children }: { children: React.ReactNode }) => {
       window.ethereum.on(
         "accountsChanged",
         async function (accounts: string[]) {
-          setAccount(accounts[0]);
-          await loadContracts(signer);
+          if (accounts.length > 0) {
+            setAccount(accounts[0]);
+            await loadContracts(signer);
+          } else {
+            disconnectWallet();
+          }
         }
       );
 
@@ -57,7 +108,6 @@ export const Web3Provider = ({ children }: { children: React.ReactNode }) => {
 
   const loadContracts = async (signer: ethers.Signer) => {
     try {
-      // setLoading(true);
       const marketplace = new ethers.Contract(
         MARKETPLACE_ADDRESS,
         MarketplaceAbi,
@@ -69,15 +119,33 @@ export const Web3Provider = ({ children }: { children: React.ReactNode }) => {
       setNFT(nft);
     } catch (error) {
       console.error("Error loading contracts:", error);
-    } finally {
-      // setLoading(false);
     }
   };
 
   const disconnectWallet = () => {
     setAccount("");
-    setMarketplace(null);
-    setNFT(null);
+    // Don't clear contracts, revert to read-only mode
+    loadContractsReadOnly();
+  };
+
+  const loadContractsReadOnly = async () => {
+    try {
+      const provider = new ethers.JsonRpcProvider(
+        process.env.NEXT_PUBLIC_RPC_URL || "http://localhost:8545"
+      );
+
+      const marketplace = new ethers.Contract(
+        MARKETPLACE_ADDRESS,
+        MarketplaceAbi,
+        provider
+      );
+      setMarketplace(marketplace);
+
+      const nft = new ethers.Contract(NFT_ADDRESS, NFTAbi, provider);
+      setNFT(nft);
+    } catch (error) {
+      console.error("Error loading contracts in read-only mode:", error);
+    }
   };
 
   return (

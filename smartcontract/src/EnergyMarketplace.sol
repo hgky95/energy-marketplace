@@ -9,6 +9,7 @@ import {console} from "forge-std/console.sol";
 contract EnergyMarketplace is ReentrancyGuard, Ownable {
     EnergyNFT public nftContract;
 
+    uint256 public itemCount;
     uint256 public marketplaceFeePercentage;
 
     struct Item {
@@ -75,6 +76,7 @@ contract EnergyMarketplace is ReentrancyGuard, Ownable {
             _energyAmount,
             _price
         );
+        itemCount++;
         return newTokenId;
     }
 

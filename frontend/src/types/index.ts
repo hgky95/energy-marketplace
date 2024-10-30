@@ -2,6 +2,15 @@ export interface NFT {
   id: number;
   title: string;
   price: string;
+  energyAmount: number;
+  seller: string;
+  image: string;
+  description: string;
+  attributes: {
+    trait_type: string;
+    value: string | number;
+    unit?: string;
+  }[];
 }
 
 export interface SidebarProps {
@@ -16,4 +25,6 @@ export interface NFTGridProps {
 export interface NFTCardProps {
   title: string;
   price: string;
+  energyAmount: number;
+  seller: string;
 }
