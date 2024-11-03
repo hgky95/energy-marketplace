@@ -43,6 +43,9 @@ export default function NFTCard({
   const { account, marketplace, web3Handler } = useContext(Web3);
   const [imageError, setImageError] = useState(false);
 
+  const isOwner =
+    account && seller && account.toLowerCase() === seller.toLowerCase();
+
   const allAttributes = [
     {
       trait_type: "Seller",
@@ -74,6 +77,11 @@ export default function NFTCard({
         return;
       }
 
+      if (isOwner) {
+        alert("You cannot buy your own NFT");
+        return;
+      }
+
       // convert price string to Wei
       const priceInWei = ethers.parseEther(price.replace(" ETH", ""));
 
@@ -85,11 +93,19 @@ export default function NFTCard({
 
       alert(`Successfully purchased NFT #${id}`);
 
-      // loadNFTs();
+      // if (loadNFTs) {
+      //   await loadNFTs();
+      // }
     } catch (error: any) {
       console.error("Error buying NFT:", error);
       alert(`Failed to purchase NFT: ${error.message}`);
     }
+  };
+
+  const getButtonText = () => {
+    if (!account) return "Connect Wallet";
+    if (isOwner) return "You Own This";
+    return "Buy Now";
   };
 
   return (
@@ -146,14 +162,18 @@ export default function NFTCard({
           </div>
           <button
             className={`px-4 py-2 rounded-lg transition-colors ${
-              account
-                ? "bg-blue-600 text-white hover:bg-primary/90"
-                : "bg-gray-300 text-gray-500 cursor-not-allowed"
+              !account
+                ? "bg-gray-300 text-gray-500"
+                : isOwner
+                ? "bg-green-500 text-white cursor-not-allowed"
+                : "bg-blue-600 text-white hover:bg-blue-700"
             }`}
-            disabled={!account}
+            disabled={
+              !account || account.toLowerCase() === seller.toLowerCase()
+            }
             onClick={handleBuy}
           >
-            Buy Now
+            {getButtonText()}
           </button>
         </div>
       </div>
