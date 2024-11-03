@@ -2,8 +2,10 @@ import React, { useState, useContext } from "react";
 import Image from "next/image";
 import { Zap } from "lucide-react";
 import { Web3 } from "./Web3";
+import { ethers } from "ethers";
 
 interface NFTCardProps {
+  id: number;
   title: string;
   price: string;
   energyAmount: number;
@@ -16,6 +18,7 @@ interface NFTCardProps {
     unit?: string;
     fullValue?: string;
   }>;
+  loadNFTs?: () => Promise<void>;
 }
 
 const DEFAULT_IPFS_HOST =
@@ -27,6 +30,7 @@ const formatAddress = (address: string) => {
 };
 
 export default function NFTCard({
+  id,
   title,
   price,
   energyAmount,
@@ -34,8 +38,9 @@ export default function NFTCard({
   image,
   description = "",
   attributes = [],
+  loadNFTs,
 }: NFTCardProps) {
-  const { account, web3Handler } = useContext(Web3);
+  const { account, marketplace, web3Handler } = useContext(Web3);
   const [imageError, setImageError] = useState(false);
 
   const allAttributes = [
@@ -57,8 +62,34 @@ export default function NFTCard({
 
   const imageUrl = getOptimizedImageUrl(image);
 
-  const handleBuy = () => {
-    //TODO handle buy
+  const handleBuy = async () => {
+    try {
+      if (!account) {
+        alert("Please connect your wallet first");
+        return;
+      }
+
+      if (!marketplace) {
+        alert("Marketplace contract not available");
+        return;
+      }
+
+      // convert price string to Wei
+      const priceInWei = ethers.parseEther(price.replace(" ETH", ""));
+
+      const transaction = await marketplace.buyNFT(id, {
+        value: priceInWei,
+      });
+
+      await transaction.wait();
+
+      alert(`Successfully purchased NFT #${id}`);
+
+      loadNFTs();
+    } catch (error: any) {
+      console.error("Error buying NFT:", error);
+      alert(`Failed to purchase NFT: ${error.message}`);
+    }
   };
 
   return (

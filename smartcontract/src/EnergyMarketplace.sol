@@ -39,6 +39,7 @@ contract EnergyMarketplace is ReentrancyGuard, Ownable {
     event ListingUpdated(uint256 tokenId, uint256 newPrice);
     event ListingCancelled(uint256 tokenId);
     event MarketplaceFeeUpdated(uint256 newFeePercentage);
+    event Withdrawal(address recipient, uint256 amount);
 
     constructor(address _nftContract) Ownable(msg.sender) {
         nftContract = EnergyNFT(_nftContract);
@@ -46,7 +47,7 @@ contract EnergyMarketplace is ReentrancyGuard, Ownable {
     }
 
     function updateFee(uint256 _newFeePercentage) external onlyOwner {
-        require(_newFeePercentage > 0, "Fee percentage cannot less than 0%");
+        require(_newFeePercentage > 0, "Fee percentage cannot be less than 0%");
         marketplaceFeePercentage = _newFeePercentage;
         emit MarketplaceFeeUpdated(_newFeePercentage);
     }
@@ -80,36 +81,36 @@ contract EnergyMarketplace is ReentrancyGuard, Ownable {
         return newTokenId;
     }
 
-    function buyNFT(uint256 _tokenId) external payable {
-        //Use storage to modify state of isActive
+    function buyNFT(uint256 _tokenId) external payable nonReentrant {
         Item storage item = items[_tokenId];
         require(item.isActive, "NFT not for sale");
-        console.log("msg.sender: ", msg.sender);
-        console.log("msg.value: ", msg.value);
-        console.log("item.price: ", item.price);
         require(msg.value >= item.price, "Insufficient payment");
-
-        //Transfer NFT to buyer
-        console.log("address(this)", address(this));
-        nftContract.transferFrom(address(this), msg.sender, _tokenId);
 
         address seller = item.seller;
         uint256 price = item.price;
-        uint256 fee = price * (marketplaceFeePercentage / 100);
-        console.log("Fee: ", fee);
+        uint256 fee = (price * marketplaceFeePercentage) / 100;
         uint256 sellerProceeds = price - fee;
-        console.log("sellerProceeds: ", sellerProceeds);
+        console.log("fee: ", fee);
 
-        //Transfer payment to seller
-        payable(seller).transfer(sellerProceeds);
-        console.log("Seller paid!!!");
-        //Transfer fee to marketplace owner
-        payable(owner()).transfer(fee);
-        console.log("Transfered fee to market owner!!!");
-
-        nftContract.transferEnergy(seller, msg.sender, item.energyAmount);
-
+        // This flow apply checks-effects-interactions pattern
+        // Mark item as inactive before making transfers (prevent reentrancy)
         item.isActive = false;
+
+        nftContract.transferFrom(seller, msg.sender, _tokenId);
+        console.log("transferred from seller to buyer");
+        nftContract.transferEnergy(seller, msg.sender, _tokenId);
+        console.log("transferred energy seller to buyer");
+        payable(seller).transfer(sellerProceeds);
+
         emit NFTSold(_tokenId, seller, msg.sender, price, fee);
+    }
+
+    function withdrawFees(uint256 _amount) external onlyOwner {
+        uint256 balance = address(this).balance;
+        require(balance > _amount, "Balances is not enough to withdraw");
+
+        (bool success, ) = payable(owner()).call{value: _amount}("");
+        require(success, "Failed to withdraw fees");
+        emit Withdrawal(owner(), _amount);
     }
 }

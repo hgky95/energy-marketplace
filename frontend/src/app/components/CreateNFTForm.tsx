@@ -17,6 +17,7 @@ export default function CreateNFTForm() {
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
 
   const PINATA_HOST = process.env.NEXT_PUBLIC_PINATA_GATEWAY + "/ipfs/";
+  const MARKETPLACE_ADDRESS = process.env.NEXT_PUBLIC_MARKETPLACE_ADDRESS || "";
 
   const fetchEnergyBalance = async () => {
     if (account && nft) {
@@ -79,8 +80,8 @@ export default function CreateNFTForm() {
         setErrorMessage("Please connect your wallet.");
         return;
       }
-      if (!marketplace) {
-        setErrorMessage("Marketplace contract not loaded.");
+      if (!marketplace || !nft) {
+        setErrorMessage("Contracts not loaded.");
         return;
       }
 
@@ -91,10 +92,12 @@ export default function CreateNFTForm() {
         energyAmount,
         ethers.parseEther(price)
       );
-      await tx.wait();
+
+      await (await nft.setApprovalForAll(MARKETPLACE_ADDRESS, true)).wait();
 
       console.log("NFT minted and listed successfully");
       setMintingSuccess(true);
+
       await fetchEnergyBalance();
     } catch (error) {
       console.error("Error minting and listing NFT:", error);

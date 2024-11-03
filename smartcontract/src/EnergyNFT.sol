@@ -7,14 +7,36 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 contract EnergyNFT is ERC721URIStorage, Ownable {
     uint256 private _tokenIds;
     mapping(address => uint256) public userEnergyBalances;
+    mapping(uint256 => uint256) public tokenEnergyAmount;
+    address public marketplaceAddress;
 
     event EnergyNFTMinted(uint256 tokenId, address owner, string ipfsHash);
     event EnergyBalanceUpdated(address user, uint256 newBalance);
     event EnergyProduced(address user, uint256 amount);
+    event MarketplaceAddressUpdated(address newMarketplace);
 
     constructor() ERC721("Energy NFT", "ENFT") Ownable(msg.sender) {}
 
-    // TODO this method should be interact with trusted oracle or energy meter
+    modifier onlyMarketplace() {
+        require(
+            msg.sender == marketplaceAddress,
+            "Only marketplace can call this function"
+        );
+        _;
+    }
+
+    function setMarketplaceAddress(
+        address _marketplaceAddress
+    ) external onlyOwner {
+        require(
+            _marketplaceAddress != address(0),
+            "Invalid marketplace address"
+        );
+        marketplaceAddress = _marketplaceAddress;
+        emit MarketplaceAddressUpdated(_marketplaceAddress);
+    }
+
+    //TODO this method should be interact with trusted oracle
     function produceEnergy(
         address user,
         uint256 _energyAmount
@@ -34,9 +56,12 @@ contract EnergyNFT is ERC721URIStorage, Ownable {
             userEnergyBalances[_from] >= _energyAmount,
             "Insufficient energy balance!!!"
         );
+
         _tokenIds++;
         _safeMint(_from, _tokenIds);
         _setTokenURI(_tokenIds, _tokenURI);
+
+        tokenEnergyAmount[_tokenIds] = _energyAmount;
         userEnergyBalances[_from] -= _energyAmount;
 
         emit EnergyNFTMinted(_tokenIds, _from, _tokenURI);
@@ -48,14 +73,19 @@ contract EnergyNFT is ERC721URIStorage, Ownable {
     function transferEnergy(
         address _from,
         address _to,
-        uint256 _energyAmount
-    ) external {
+        uint256 _tokenId
+    ) external onlyMarketplace {
         require(
-            userEnergyBalances[_from] - _energyAmount > 0,
-            "Insufficient energy!!!"
+            ownerOf(_tokenId) == _to,
+            "Energy can only be transferred to NFT owner"
         );
-        userEnergyBalances[_from] -= _energyAmount;
-        userEnergyBalances[_to] += _energyAmount;
+
+        uint256 energyAmount = tokenEnergyAmount[_tokenId];
+        require(energyAmount > 0, "No energy associated with this NFT");
+
+        userEnergyBalances[_to] += energyAmount;
+        tokenEnergyAmount[_tokenId] = 0;
+
         emit EnergyBalanceUpdated(_from, userEnergyBalances[_from]);
         emit EnergyBalanceUpdated(_to, userEnergyBalances[_to]);
     }

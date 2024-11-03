@@ -23,6 +23,9 @@ contract Deployment is Script {
             address(energyMarketplace)
         );
 
+        energyNFT.setMarketplaceAddress(address(energyMarketplace));
+        console.log("Marketplace address set in NFT contract");
+
         vm.stopBroadcast();
     }
 }

@@ -118,6 +118,7 @@ export default function NFTGrid({ section }: NFTGridProps) {
       {nfts.map((nft) => (
         <NFTCard
           key={nft.id}
+          id={nft.id}
           title={nft.title}
           price={nft.price}
           energyAmount={nft.energyAmount}
@@ -125,6 +126,7 @@ export default function NFTGrid({ section }: NFTGridProps) {
           image={nft.image}
           description={nft.description}
           attributes={nft.attributes}
+          loadNFTs={loadNFTs}
         />
       ))}
     </div>
