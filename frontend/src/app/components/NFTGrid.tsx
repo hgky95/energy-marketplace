@@ -1,9 +1,9 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useState, useCallback } from "react";
 import { NFTGridProps } from "../../types";
 import NFTCard from "./NFTCard";
 import CreateNFTForm from "./CreateNFTForm";
 import { Web3 } from "./Web3";
-import { CirclePlus } from "lucide-react";
+import { useBlockchainEvents } from "../../hooks/useBlockchainEvents";
 import { ethers } from "ethers";
 
 interface NFTMetadata {
@@ -28,13 +28,10 @@ interface NFT {
 }
 
 export default function NFTGrid({ section }: NFTGridProps) {
-  const { account, marketplace, nft, web3Handler } = useContext(Web3);
+  const { account, marketplace, nft } = useContext(Web3);
   const [nfts, setNfts] = useState<NFT[]>([]);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    loadNFTs();
-  }, [account, marketplace, nft]);
+  const { shouldRefresh, resetRefreshFlag } = useBlockchainEvents(marketplace);
 
   const fetchMetadata = async (uri: string): Promise<NFTMetadata | null> => {
     try {
@@ -47,13 +44,12 @@ export default function NFTGrid({ section }: NFTGridProps) {
     }
   };
 
-  const loadNFTs = async () => {
+  const loadNFTs = useCallback(async () => {
     try {
       if (!marketplace || !nft) return;
 
       setLoading(true);
       const itemCount = await marketplace.itemCount();
-
       let activeNFTs: NFT[] = [];
 
       for (let i = 1; i <= itemCount; i++) {
@@ -74,7 +70,16 @@ export default function NFTGrid({ section }: NFTGridProps) {
             attributes: metadata?.attributes,
           };
 
-          activeNFTs.push(nftItem);
+          // Filter based on section
+          if (
+            section === "home" ||
+            (section === "listed" &&
+              item.seller.toLowerCase() === account?.toLowerCase()) ||
+            (section === "purchased" &&
+              item.buyer?.toLowerCase() === account?.toLowerCase())
+          ) {
+            activeNFTs.push(nftItem);
+          }
         }
       }
 
@@ -84,7 +89,20 @@ export default function NFTGrid({ section }: NFTGridProps) {
       console.error("Error loading NFTs:", error);
       setLoading(false);
     }
-  };
+  }, [marketplace, nft, account, section]);
+
+  // Load NFTs on initial render and when section changes
+  useEffect(() => {
+    loadNFTs();
+  }, [loadNFTs]);
+
+  // Refresh when blockchain events occur
+  useEffect(() => {
+    if (shouldRefresh) {
+      loadNFTs();
+      resetRefreshFlag();
+    }
+  }, [shouldRefresh, loadNFTs, resetRefreshFlag]);
 
   if (section === "create") {
     return <CreateNFTForm />;
@@ -106,8 +124,11 @@ export default function NFTGrid({ section }: NFTGridProps) {
       <div className="flex flex-col items-center justify-center min-h-[400px] text-center p-8">
         <h3 className="text-xl font-semibold mb-2">No NFTs Listed</h3>
         <p className="text-gray-600 mb-6 max-w-md">
-          There are currently no energy NFTs listed in the marketplace. Be the
-          first to create and list your energy NFT!
+          {section === "listed"
+            ? "You haven't listed any NFTs yet."
+            : section === "purchased"
+            ? "You haven't purchased any NFTs yet."
+            : "There are currently no energy NFTs listed in the marketplace."}
         </p>
       </div>
     );

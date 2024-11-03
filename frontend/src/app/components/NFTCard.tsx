@@ -85,7 +85,7 @@ export default function NFTCard({
 
       alert(`Successfully purchased NFT #${id}`);
 
-      loadNFTs();
+      // loadNFTs();
     } catch (error: any) {
       console.error("Error buying NFT:", error);
       alert(`Failed to purchase NFT: ${error.message}`);
