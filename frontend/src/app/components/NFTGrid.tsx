@@ -50,40 +50,44 @@ export default function NFTGrid({ section }: NFTGridProps) {
 
       setLoading(true);
       const itemCount = await marketplace.itemCount();
-      let activeNFTs: NFT[] = [];
+      let nfts: NFT[] = [];
 
       for (let i = 1; i <= itemCount; i++) {
         const item = await marketplace.items(i);
 
+        const uri = await nft.tokenURI(item.tokenId);
+        const metadata = await fetchMetadata(uri);
+        const nftItem: NFT = {
+          id: item.tokenId,
+          title: `Energy NFT #${item.tokenId}`,
+          price: `${ethers.formatEther(item.price)} ETH`,
+          energyAmount: item.energyAmount,
+          seller: item.seller,
+          image: metadata?.image,
+          description: metadata?.description,
+          attributes: metadata?.attributes,
+        };
+
         if (item.isActive) {
-          const uri = await nft.tokenURI(item.tokenId);
-          const metadata = await fetchMetadata(uri);
-
-          const nftItem: NFT = {
-            id: item.tokenId,
-            title: `Energy NFT #${item.tokenId}`,
-            price: `${ethers.formatEther(item.price)} ETH`,
-            energyAmount: item.energyAmount,
-            seller: item.seller,
-            image: metadata?.image,
-            description: metadata?.description,
-            attributes: metadata?.attributes,
-          };
-
-          // Filter based on section
           if (
             section === "home" ||
             (section === "listed" &&
-              item.seller.toLowerCase() === account?.toLowerCase()) ||
-            (section === "purchased" &&
-              item.buyer?.toLowerCase() === account?.toLowerCase())
+              item.seller.toLowerCase() === account?.toLowerCase())
           ) {
-            activeNFTs.push(nftItem);
+            nfts.push(nftItem);
+          }
+        } else {
+          const ownerAddress = await nft.ownerOf(item.tokenId);
+          if (
+            section === "purchased" &&
+            ownerAddress.toLowerCase() === account?.toLowerCase()
+          ) {
+            nfts.push(nftItem);
           }
         }
       }
 
-      setNfts(activeNFTs);
+      setNfts(nfts);
       setLoading(false);
     } catch (error) {
       console.error("Error loading NFTs:", error);
