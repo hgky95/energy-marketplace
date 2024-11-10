@@ -2,28 +2,36 @@ import { useState, createContext, useEffect } from "react";
 import { ethers } from "ethers";
 import MarketplaceAbi from "../../contracts/MarketplaceAbi.json";
 import NFTAbi from "../../contracts/NFTAbi.json";
+import LoyaltyProgramAbi from "../../contracts/LoyaltyProgramABI.json";
 
 export const Web3 = createContext<{
   account: string;
   marketplace: ethers.Contract | null;
   nft: ethers.Contract | null;
+  loyaltyProgram: ethers.Contract | null;
   web3Handler: () => Promise<void>;
   disconnectWallet: () => void;
 }>({
   account: "",
   marketplace: null,
   nft: null,
+  loyaltyProgram: null,
   web3Handler: async () => {},
   disconnectWallet: () => {},
 });
 
 const NFT_ADDRESS = process.env.NEXT_PUBLIC_NFT_ADDRESS || "";
 const MARKETPLACE_ADDRESS = process.env.NEXT_PUBLIC_MARKETPLACE_ADDRESS || "";
+const LOYALTY_PROGRAM_ADDRESS =
+  process.env.NEXT_PUBLIC_LOYALTY_PROGRAM_ADDRESS || "";
 
 export const Web3Provider = ({ children }: { children: React.ReactNode }) => {
   const [account, setAccount] = useState<string>("");
   const [marketplace, setMarketplace] = useState<ethers.Contract | null>(null);
   const [nft, setNFT] = useState<ethers.Contract | null>(null);
+  const [loyaltyProgram, setLoyaltyProgram] = useState<ethers.Contract | null>(
+    null
+  );
 
   // Load contracts in read-only mode on initial load
   useEffect(() => {
@@ -43,6 +51,13 @@ export const Web3Provider = ({ children }: { children: React.ReactNode }) => {
 
         const nft = new ethers.Contract(NFT_ADDRESS, NFTAbi, provider);
         setNFT(nft);
+
+        const loyaltyProgram = new ethers.Contract(
+          LOYALTY_PROGRAM_ADDRESS,
+          LoyaltyProgramAbi,
+          provider
+        );
+        setLoyaltyProgram(loyaltyProgram);
       } catch (error) {
         console.error("Error loading contracts in read-only mode:", error);
       }
@@ -117,6 +132,13 @@ export const Web3Provider = ({ children }: { children: React.ReactNode }) => {
 
       const nft = new ethers.Contract(NFT_ADDRESS, NFTAbi, signer);
       setNFT(nft);
+
+      const loyaltyProgram = new ethers.Contract(
+        LOYALTY_PROGRAM_ADDRESS,
+        LoyaltyProgramAbi,
+        signer
+      );
+      setLoyaltyProgram(loyaltyProgram);
     } catch (error) {
       console.error("Error loading contracts:", error);
     }
@@ -150,7 +172,14 @@ export const Web3Provider = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <Web3.Provider
-      value={{ account, marketplace, nft, web3Handler, disconnectWallet }}
+      value={{
+        account,
+        marketplace,
+        nft,
+        loyaltyProgram,
+        web3Handler,
+        disconnectWallet,
+      }}
     >
       {children}
     </Web3.Provider>

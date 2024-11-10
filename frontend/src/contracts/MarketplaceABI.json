@@ -5,6 +5,11 @@
         "internalType": "address",
         "name": "_nftContract",
         "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_loyaltyProgram",
+        "type": "address"
       }
     ],
     "stateMutability": "nonpayable",
@@ -43,6 +48,19 @@
       {
         "indexed": false,
         "internalType": "uint256",
+        "name": "newFeePercentage",
+        "type": "uint256"
+      }
+    ],
+    "name": "CommissionRateUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
         "name": "tokenId",
         "type": "uint256"
       }
@@ -74,12 +92,12 @@
     "inputs": [
       {
         "indexed": false,
-        "internalType": "uint256",
-        "name": "newFeePercentage",
-        "type": "uint256"
+        "internalType": "address",
+        "name": "newLoyaltyProgram",
+        "type": "address"
       }
     ],
-    "name": "MarketplaceFeeUpdated",
+    "name": "LoyaltyProgramUpdated",
     "type": "event"
   },
   {
@@ -195,6 +213,32 @@
     "type": "event"
   },
   {
+    "inputs": [],
+    "name": "DEFAULT_BASE_COMMISSION_RATE",
+    "outputs": [
+      {
+        "internalType": "uint8",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "baseCommissionRate",
+    "outputs": [
+      {
+        "internalType": "uint8",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "uint256",
@@ -205,6 +249,30 @@
     "name": "buyNFT",
     "outputs": [],
     "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "price",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "seller",
+        "type": "address"
+      }
+    ],
+    "name": "calculateFee",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -261,12 +329,12 @@
   },
   {
     "inputs": [],
-    "name": "marketplaceFeePercentage",
+    "name": "loyaltyProgram",
     "outputs": [
       {
-        "internalType": "uint256",
+        "internalType": "contract ILoyaltyProgram",
         "name": "",
-        "type": "uint256"
+        "type": "address"
       }
     ],
     "stateMutability": "view",
@@ -338,6 +406,19 @@
     "inputs": [
       {
         "internalType": "address",
+        "name": "_loyaltyProgram",
+        "type": "address"
+      }
+    ],
+    "name": "setLoyaltyProgram",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
         "name": "newOwner",
         "type": "address"
       }
@@ -350,12 +431,12 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "_newFeePercentage",
-        "type": "uint256"
+        "internalType": "uint8",
+        "name": "_newCommissionRate",
+        "type": "uint8"
       }
     ],
-    "name": "updateFee",
+    "name": "updateCommissionRate",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
