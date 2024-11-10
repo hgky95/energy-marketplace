@@ -27,7 +27,7 @@ export const useLoyaltyPoints = (
     const pointsFilter = loyaltyProgram.filters.LoyaltyPointsAdded();
 
     const handlePointsAdded = async (event: any) => {
-      if (event.args[0] === account.toLowerCase()) {
+      if (event.args[0].toLowerCase() === account.toLowerCase()) {
         setPoints(Number(event.args[1]));
       }
     };
