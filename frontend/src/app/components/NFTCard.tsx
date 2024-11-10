@@ -3,6 +3,7 @@ import Image from "next/image";
 import { Zap } from "lucide-react";
 import { Web3 } from "./Web3";
 import { ethers } from "ethers";
+import * as APP_CONSTANT from "../../constants/AppConstant";
 
 interface NFTCardProps {
   id: number;
@@ -19,6 +20,7 @@ interface NFTCardProps {
     fullValue?: string;
   }>;
   loadNFTs?: () => Promise<void>;
+  activeSection: string;
 }
 
 const DEFAULT_IPFS_HOST =
@@ -39,6 +41,7 @@ export default function NFTCard({
   description = "",
   attributes = [],
   loadNFTs,
+  activeSection,
 }: NFTCardProps) {
   const { account, marketplace, web3Handler } = useContext(Web3);
   const [imageError, setImageError] = useState(false);
@@ -160,21 +163,23 @@ export default function NFTCard({
             <p className="text-sm text-gray-500">Price</p>
             <p className="font-semibold">{price}</p>
           </div>
-          <button
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              !account
-                ? "bg-gray-300 text-gray-500"
-                : isOwner
-                ? "bg-green-500 text-white cursor-not-allowed"
-                : "bg-blue-600 text-white hover:bg-blue-700"
-            }`}
-            disabled={
-              !account || account.toLowerCase() === seller.toLowerCase()
-            }
-            onClick={handleBuy}
-          >
-            {getButtonText()}
-          </button>
+          {activeSection === APP_CONSTANT.HOME_MENU_ID && (
+            <button
+              className={`px-4 py-2 rounded-lg transition-colors ${
+                !account
+                  ? "bg-gray-300 text-gray-500"
+                  : isOwner
+                  ? "bg-green-500 text-white cursor-not-allowed"
+                  : "bg-blue-600 text-white hover:bg-blue-700"
+              }`}
+              disabled={
+                !account || account.toLowerCase() === seller.toLowerCase()
+              }
+              onClick={handleBuy}
+            >
+              {getButtonText()}
+            </button>
+          )}
         </div>
       </div>
     </div>

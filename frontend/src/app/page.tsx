@@ -6,9 +6,12 @@ import Sidebar from "./components/Sidebar";
 import NFTGrid from "./components/NFTGrid";
 import ConnectButton from "./components/ConnectButton";
 import { Web3Provider } from "./components/Web3";
+import * as APP_CONSTANT from "../constants/AppConstant";
 
 export default function Home() {
-  const [activeSection, setActiveSection] = useState<string>("home");
+  const [activeSection, setActiveSection] = useState<string>(
+    APP_CONSTANT.HOME_MENU_ID
+  );
 
   return (
     <Web3Provider>

@@ -5,6 +5,7 @@ import CreateNFTForm from "./CreateNFTForm";
 import { Web3 } from "./Web3";
 import { useBlockchainEvents } from "../../hooks/useBlockchainEvents";
 import { ethers } from "ethers";
+import * as APP_CONSTANT from "../../constants/AppConstant";
 
 interface NFTMetadata {
   description: string;
@@ -70,8 +71,8 @@ export default function NFTGrid({ section }: NFTGridProps) {
 
         if (item.isActive) {
           if (
-            section === "home" ||
-            (section === "listed" &&
+            section === APP_CONSTANT.HOME_MENU_ID ||
+            (section === APP_CONSTANT.LISTING_MENU_ID &&
               item.seller.toLowerCase() === account?.toLowerCase())
           ) {
             nfts.push(nftItem);
@@ -79,7 +80,7 @@ export default function NFTGrid({ section }: NFTGridProps) {
         } else {
           const ownerAddress = await nft.ownerOf(item.tokenId);
           if (
-            section === "purchased" &&
+            section === APP_CONSTANT.PURCHASED_MENU_ID &&
             ownerAddress.toLowerCase() === account?.toLowerCase()
           ) {
             nfts.push(nftItem);
@@ -108,7 +109,7 @@ export default function NFTGrid({ section }: NFTGridProps) {
     }
   }, [shouldRefresh, loadNFTs, resetRefreshFlag]);
 
-  if (section === "create") {
+  if (section === APP_CONSTANT.CREATE_MENU_ID) {
     return <CreateNFTForm />;
   }
 
@@ -128,9 +129,9 @@ export default function NFTGrid({ section }: NFTGridProps) {
       <div className="flex flex-col items-center justify-center min-h-[400px] text-center p-8">
         <h3 className="text-xl font-semibold mb-2">No NFTs Listed</h3>
         <p className="text-gray-600 mb-6 max-w-md">
-          {section === "listed"
+          {section === APP_CONSTANT.LISTING_MENU_ID
             ? "You haven't listed any NFTs yet."
-            : section === "purchased"
+            : section === APP_CONSTANT.PURCHASED_MENU_ID
             ? "You haven't purchased any NFTs yet."
             : "There are currently no energy NFTs listed in the marketplace."}
         </p>
@@ -152,6 +153,7 @@ export default function NFTGrid({ section }: NFTGridProps) {
           description={nft.description}
           attributes={nft.attributes}
           loadNFTs={loadNFTs}
+          activeSection={section}
         />
       ))}
     </div>

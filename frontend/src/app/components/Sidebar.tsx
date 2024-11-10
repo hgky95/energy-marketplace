@@ -10,6 +10,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { InfoIcon } from "lucide-react";
+import * as APP_CONSTANT from "../../constants/AppConstant";
 
 interface Discount {
   points: number;
@@ -80,10 +81,13 @@ const useBaseCommissionRate = (marketplace: ethers.Contract | null) => {
 };
 
 const menuItems = [
-  { id: "home", label: "Home" },
-  { id: "create", label: "Create" },
-  { id: "listed", label: "My Listed Items" },
-  { id: "purchased", label: "My Purchased" },
+  { id: APP_CONSTANT.HOME_MENU_ID, label: APP_CONSTANT.HOME_MENU_LABEL },
+  { id: APP_CONSTANT.CREATE_MENU_ID, label: APP_CONSTANT.CREATE_MENU_LABEL },
+  { id: APP_CONSTANT.LISTING_MENU_ID, label: APP_CONSTANT.LISTING_MENU_LABEL },
+  {
+    id: APP_CONSTANT.PURCHASED_MENU_ID,
+    label: APP_CONSTANT.PURCHASED_MENU_LABEL,
+  },
 ];
 
 export default function Sidebar({
@@ -108,12 +112,22 @@ export default function Sidebar({
                 ? "bg-white bg-opacity-20"
                 : "hover:bg-white hover:bg-opacity-10"
             } ${
-              !account && ["create", "listed", "purchased"].includes(item.id)
+              !account &&
+              [
+                APP_CONSTANT.CREATE_MENU_ID,
+                APP_CONSTANT.LISTING_MENU_ID,
+                APP_CONSTANT.PURCHASED_MENU_ID,
+              ].includes(item.id)
                 ? "cursor-not-allowed opacity-50"
                 : ""
             }`}
             disabled={
-              !account && ["create", "listed", "purchased"].includes(item.id)
+              !account &&
+              [
+                APP_CONSTANT.CREATE_MENU_ID,
+                APP_CONSTANT.LISTING_MENU_ID,
+                APP_CONSTANT.PURCHASED_MENU_ID,
+              ].includes(item.id)
             }
           >
             {item.label}
