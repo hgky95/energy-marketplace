@@ -67,12 +67,10 @@ contract EnergyMarketplace is ReentrancyGuard, Ownable {
         address seller
     ) public view returns (uint256) {
         uint256 sellerPoints = loyaltyProgram.getLoyaltyPoints(seller);
-        console.log("sellerPoints: ", sellerPoints);
         uint256 commissionRate = loyaltyProgram.getCommissionRate(
             sellerPoints,
             baseCommissionRate
         );
-        console.log("commissionRate: ", commissionRate);
         return (price * commissionRate) / (100 * PRECISION);
     }
 
