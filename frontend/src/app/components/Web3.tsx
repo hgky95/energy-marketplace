@@ -35,36 +35,36 @@ export const Web3Provider = ({ children }: { children: React.ReactNode }) => {
 
   // Load contracts in read-only mode on initial load
   useEffect(() => {
-    const loadContractsReadOnly = async () => {
-      try {
-        // Use public provider for initial read-only access
-        const provider = new ethers.JsonRpcProvider(
-          process.env.NEXT_PUBLIC_RPC_URL || "http://localhost:8545"
-        );
-
-        const marketplace = new ethers.Contract(
-          MARKETPLACE_ADDRESS,
-          MarketplaceAbi,
-          provider
-        );
-        setMarketplace(marketplace);
-
-        const nft = new ethers.Contract(NFT_ADDRESS, NFTAbi, provider);
-        setNFT(nft);
-
-        const loyaltyProgram = new ethers.Contract(
-          LOYALTY_PROGRAM_ADDRESS,
-          LoyaltyProgramAbi,
-          provider
-        );
-        setLoyaltyProgram(loyaltyProgram);
-      } catch (error) {
-        console.error("Error loading contracts in read-only mode:", error);
-      }
-    };
-
     loadContractsReadOnly();
   }, []);
+
+  const loadContractsReadOnly = async () => {
+    try {
+      // Use public provider for initial read-only access
+      const provider = new ethers.JsonRpcProvider(
+        process.env.NEXT_PUBLIC_RPC_URL || "http://localhost:8545"
+      );
+
+      const marketplace = new ethers.Contract(
+        MARKETPLACE_ADDRESS,
+        MarketplaceAbi,
+        provider
+      );
+      setMarketplace(marketplace);
+
+      const nft = new ethers.Contract(NFT_ADDRESS, NFTAbi, provider);
+      setNFT(nft);
+
+      const loyaltyProgram = new ethers.Contract(
+        LOYALTY_PROGRAM_ADDRESS,
+        LoyaltyProgramAbi,
+        provider
+      );
+      setLoyaltyProgram(loyaltyProgram);
+    } catch (error) {
+      console.error("Error loading contracts in read-only mode:", error);
+    }
+  };
 
   // Check if wallet is already connected
   useEffect(() => {
@@ -146,28 +146,8 @@ export const Web3Provider = ({ children }: { children: React.ReactNode }) => {
 
   const disconnectWallet = () => {
     setAccount("");
-    // Don't clear contracts, revert to read-only mode
+    // Revert to read-only mode
     loadContractsReadOnly();
-  };
-
-  const loadContractsReadOnly = async () => {
-    try {
-      const provider = new ethers.JsonRpcProvider(
-        process.env.NEXT_PUBLIC_RPC_URL || "http://localhost:8545"
-      );
-
-      const marketplace = new ethers.Contract(
-        MARKETPLACE_ADDRESS,
-        MarketplaceAbi,
-        provider
-      );
-      setMarketplace(marketplace);
-
-      const nft = new ethers.Contract(NFT_ADDRESS, NFTAbi, provider);
-      setNFT(nft);
-    } catch (error) {
-      console.error("Error loading contracts in read-only mode:", error);
-    }
   };
 
   return (

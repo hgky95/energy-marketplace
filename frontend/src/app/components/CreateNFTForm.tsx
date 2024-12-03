@@ -141,7 +141,7 @@ export default function CreateNFTForm() {
         </h2>
         <div className="mb-6 flex items-center space-x-2">
           <p className="text-lg text-white">
-            Current Energy Balance: {energyBalance} kWh
+            Current Energy Balance: {energyBalance} kW
           </p>
           <button
             onClick={fetchEnergyBalance}
@@ -168,7 +168,7 @@ export default function CreateNFTForm() {
             />
           </div>
           <div>
-            <label className="block text-white mb-2">Energy Amount (kWh)</label>
+            <label className="block text-white mb-2">Energy Amount (kW)</label>
             <input
               type="number"
               value={energyAmount}

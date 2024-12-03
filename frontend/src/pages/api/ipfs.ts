@@ -44,13 +44,13 @@ export default async function handler(
       image_url = image_url + getRandomImage(energySource);
       const upload = await pinata.upload
         .json({
-          description: `Energy NFT representing ${energyAmount} kWh of ${energySource} from ${location}`,
+          description: `Energy NFT representing ${energyAmount} kW of ${energySource} from ${location}`,
           image: image_url,
           attributes: [
             {
               trait_type: "Energy Amount",
               value: energyAmount,
-              unit: "kWh",
+              unit: "kW",
             },
             {
               trait_type: "Energy Source",
