@@ -1,15 +1,12 @@
 import { useState, useEffect, useCallback, useContext } from "react";
 import { ethers } from "ethers";
-// import { Web3 } from "./Web3";
 
 export const useLoyaltyPoints = (
   account: string | "",
   loyaltyProgram: ethers.Contract | null
 ) => {
-  //   const { account, loyaltyProgram } = useContext(Web3);
   const [points, setPoints] = useState<number>(0);
 
-  // Fetch initial points
   const fetchPoints = useCallback(async () => {
     if (!account || !loyaltyProgram) return;
     try {
@@ -20,25 +17,29 @@ export const useLoyaltyPoints = (
     }
   }, [account, loyaltyProgram]);
 
+  const handlePointsAdded = async (event: any) => {
+    console.log("Event LoyaltyPointsAdded is triggered");
+    if (event.args[0].toLowerCase() === account.toLowerCase()) {
+      setPoints(Number(event.args[1]));
+    }
+  };
+
   // Listen to loyalty points events
   useEffect(() => {
     if (!loyaltyProgram || !account) return;
 
-    const pointsFilter = loyaltyProgram.filters.LoyaltyPointsAdded();
-
-    const handlePointsAdded = async (event: any) => {
-      if (event.args[0].toLowerCase() === account.toLowerCase()) {
-        setPoints(Number(event.args[1]));
-      }
-    };
-
-    loyaltyProgram.on(pointsFilter, handlePointsAdded);
+    // Fetch initial points
     fetchPoints();
 
+    const pointsFilter = loyaltyProgram.filters.LoyaltyPointsAdded();
+    console.log("Subscribed LoyaltyPointsAdded");
+    loyaltyProgram.on(pointsFilter, handlePointsAdded);
+
     return () => {
-      loyaltyProgram.off(pointsFilter, handlePointsAdded);
+      console.log("Unsubscribed LoyaltyPointsAdded");
+      loyaltyProgram.off(pointsFilter, () => {});
     };
-  }, [loyaltyProgram, account, fetchPoints]);
+  }, [loyaltyProgram, account]);
 
   return points;
 };

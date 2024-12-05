@@ -95,7 +95,7 @@ export default function Sidebar({
   setActiveSection,
 }: SidebarProps) {
   const { account, marketplace, loyaltyProgram } = useContext(Web3);
-  const points = useLoyaltyPoints(account, loyaltyProgram);
+  const loyaltyPoints = useLoyaltyPoints(account, loyaltyProgram);
   const tiers = useDiscountTiers(loyaltyProgram);
   const baseCommissionRate = useBaseCommissionRate(marketplace);
 
@@ -136,7 +136,7 @@ export default function Sidebar({
       </nav>
       {account && (
         <div className="w-full flex items-center p-3 mb-4 text-white">
-          <span className="mr-2">Loyalty Points: {points}</span>
+          <span className="mr-2">Loyalty Points: {loyaltyPoints}</span>
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger>

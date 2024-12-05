@@ -47,15 +47,16 @@ export default function NFTGrid({ section }: NFTGridProps) {
 
   const loadNFTs = useCallback(async () => {
     try {
-      if (!marketplace || !nft) return;
+      if (!marketplace || !nft) {
+        return;
+      }
 
       setLoading(true);
       const itemCount = await marketplace.itemCount();
+      console.log("itemCount: ", itemCount);
       let nfts: NFT[] = [];
-
       for (let i = 1; i <= itemCount; i++) {
         const item = await marketplace.items(i);
-
         const uri = await nft.tokenURI(item.tokenId);
         const metadata = await fetchMetadata(uri);
         const nftItem: NFT = {
@@ -68,7 +69,6 @@ export default function NFTGrid({ section }: NFTGridProps) {
           description: metadata?.description,
           attributes: metadata?.attributes,
         };
-
         if (item.isActive) {
           if (
             section === APP_CONSTANT.HOME_MENU_ID ||
@@ -104,8 +104,12 @@ export default function NFTGrid({ section }: NFTGridProps) {
   // Refresh when blockchain events occur
   useEffect(() => {
     if (shouldRefresh) {
-      loadNFTs();
-      resetRefreshFlag();
+      const timer = setTimeout(() => {
+        loadNFTs();
+        resetRefreshFlag();
+      }, 10000);
+
+      return () => clearTimeout(timer);
     }
   }, [shouldRefresh, loadNFTs, resetRefreshFlag]);
 
