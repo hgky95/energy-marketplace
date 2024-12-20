@@ -10,6 +10,7 @@ A decentralized marketplace for trading energy NFTs with an integrated loyalty p
 - **Web3 Integration**: Connect with MetaMask and other Web3 wallets
 
 ## Architecture
+![energy-nft-flow-chart-main drawio](https://github.com/user-attachments/assets/4bc668fe-282c-451b-abfa-66707e829b27)
 
 ## Technology Stack
 
@@ -99,3 +100,7 @@ cd frontend
 npm run build
 npm run start
 ```
+
+## User Interfaces
+![nft-listing](https://github.com/user-attachments/assets/048dc673-c9b4-4e5e-ad3b-943461630feb)
+![mint-nft](https://github.com/user-attachments/assets/db040acc-b7fc-4366-8cbb-080d9cdcb3c5)
