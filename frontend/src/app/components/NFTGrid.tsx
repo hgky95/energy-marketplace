@@ -28,11 +28,22 @@ interface NFT {
   attributes?: NFTMetadata["attributes"];
 }
 
+interface PaginationState {
+  page: number;
+  size: number;
+  totalElements: number;
+}
+
 export default function NFTGrid({ section }: NFTGridProps) {
-  const { account, marketplace, nft } = useContext(Web3);
+  const { account, marketplace, isInitialized } = useContext(Web3);
   const [nfts, setNfts] = useState<NFT[]>([]);
   const [loading, setLoading] = useState(true);
   const { shouldRefresh, resetRefreshFlag } = useBlockchainEvents(marketplace);
+  const [pagination, setPagination] = useState<PaginationState>({
+    page: 0,
+    size: 8,
+    totalElements: 0,
+  });
 
   const fetchMetadata = async (uri: string): Promise<NFTMetadata | null> => {
     try {
@@ -46,60 +57,56 @@ export default function NFTGrid({ section }: NFTGridProps) {
   };
 
   const loadNFTs = useCallback(async () => {
+    if (!isInitialized) return;
+
     try {
-      if (!marketplace || !nft) {
-        return;
-      }
-
       setLoading(true);
-      const itemCount = await marketplace.itemCount();
-      console.log("itemCount: ", itemCount);
-      let nfts: NFT[] = [];
-      for (let i = 1; i <= itemCount; i++) {
-        const item = await marketplace.items(i);
-        const uri = await nft.tokenURI(item.tokenId);
-        const metadata = await fetchMetadata(uri);
-        const nftItem: NFT = {
-          id: item.tokenId,
-          title: `Energy NFT #${item.tokenId}`,
-          price: `${ethers.formatEther(item.price)} ETH`,
-          energyAmount: item.energyAmount,
-          seller: item.seller,
-          image: metadata?.image,
-          description: metadata?.description,
-          attributes: metadata?.attributes,
-        };
-        if (item.isActive) {
-          if (
-            section === APP_CONSTANT.HOME_MENU_ID ||
-            (section === APP_CONSTANT.LISTING_MENU_ID &&
-              item.seller.toLowerCase() === account?.toLowerCase())
-          ) {
-            nfts.push(nftItem);
-          }
-        } else {
-          const ownerAddress = await nft.ownerOf(item.tokenId);
-          if (
-            section === APP_CONSTANT.PURCHASED_MENU_ID &&
-            ownerAddress.toLowerCase() === account?.toLowerCase()
-          ) {
-            nfts.push(nftItem);
-          }
-        }
+      const params = new URLSearchParams({
+        page: pagination.page.toString(),
+        size: pagination.size.toString(),
+        section: section,
+      });
+
+      if (account) {
+        params.append("account", account);
       }
 
-      setNfts(nfts);
-      setLoading(false);
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/nfts?${params.toString()}`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const data = await response.json();
+      setNfts(data.content);
+      setPagination((prev) => ({
+        ...prev,
+        totalElements: data.totalElements,
+      }));
     } catch (error) {
       console.error("Error loading NFTs:", error);
+    } finally {
       setLoading(false);
     }
-  }, [marketplace, nft, account, section]);
+  }, [pagination.page, pagination.size, section, account, isInitialized]);
+
+  // Add pagination controls
+  const handlePageChange = (newPage: number) => {
+    setPagination((prev) => ({
+      ...prev,
+      page: newPage,
+    }));
+  };
 
   // Load NFTs on initial render and when section changes
   useEffect(() => {
-    loadNFTs();
-  }, [loadNFTs]);
+    if (section !== APP_CONSTANT.CREATE_MENU_ID && isInitialized) {
+      loadNFTs();
+    }
+  }, [loadNFTs, section, isInitialized]);
 
   // Refresh when blockchain events occur
   useEffect(() => {
@@ -112,6 +119,14 @@ export default function NFTGrid({ section }: NFTGridProps) {
       return () => clearTimeout(timer);
     }
   }, [shouldRefresh, loadNFTs, resetRefreshFlag]);
+
+  // Reset pagination when section changes
+  useEffect(() => {
+    setPagination((prev) => ({
+      ...prev,
+      page: 0,
+    }));
+  }, [section]); // Dependency on section
 
   if (section === APP_CONSTANT.CREATE_MENU_ID) {
     return <CreateNFTForm />;
@@ -144,22 +159,42 @@ export default function NFTGrid({ section }: NFTGridProps) {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-      {nfts.map((nft) => (
-        <NFTCard
-          key={nft.id}
-          id={nft.id}
-          title={nft.title}
-          price={nft.price}
-          energyAmount={nft.energyAmount}
-          seller={nft.seller}
-          image={nft.image}
-          description={nft.description}
-          attributes={nft.attributes}
-          loadNFTs={loadNFTs}
-          activeSection={section}
-        />
-      ))}
+    <div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {nfts.map((nft) => (
+          <NFTCard
+            key={nft.id}
+            {...nft}
+            loadNFTs={loadNFTs}
+            activeSection={section}
+          />
+        ))}
+      </div>
+
+      {/* Pagination Controls */}
+      <div className="mt-6 flex justify-center">
+        <button
+          onClick={() => handlePageChange(pagination.page - 1)}
+          disabled={pagination.page === 0}
+          className="px-4 py-2 mr-2 bg-gray-200 rounded disabled:opacity-50"
+        >
+          Previous
+        </button>
+        <span className="px-4 py-2">
+          Page {pagination.page + 1} of{" "}
+          {Math.ceil(pagination.totalElements / pagination.size)}
+        </span>
+        <button
+          onClick={() => handlePageChange(pagination.page + 1)}
+          disabled={
+            pagination.page >=
+            Math.ceil(pagination.totalElements / pagination.size) - 1
+          }
+          className="px-4 py-2 ml-2 bg-gray-200 rounded disabled:opacity-50"
+        >
+          Next
+        </button>
+      </div>
     </div>
   );
 }

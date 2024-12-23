@@ -1,0 +1,45 @@
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/energymarket}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:admin}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  redis:
+    host: ${SPRING_REDIS_HOST:localhost}
+    port: ${SPRING_REDIS_PORT:6379}
+
+logging:
+  level:
+    org.springframework.web: INFO
+
+web3:
+  rpc-url: ${WEB3_RPC_URL}
+
+contract:
+  nft:
+    address: ${CONTRACT_ADDRESS_NFT:0x5FbDB2315678afecb367f032d93F642f64180aa3}
+  marketplace:
+    address: ${CONTRACT_ADDRESS_MARKETPLACE:0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0}
+
+ipfs:
+  gateway:
+    url: ${IPFS_GATEWAY_URL:https://ipfs.io/ipfs/}
+
+app:
+  cache:
+    ttl: 3600 # Cache TTL in seconds
+  pagination:
+    default-page-size: 20
+    max-page-size: 100
+
+blockchain:
+  node:
+    url: http://localhost:8545
