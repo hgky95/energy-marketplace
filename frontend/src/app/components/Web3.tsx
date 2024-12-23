@@ -11,6 +11,7 @@ export const Web3 = createContext<{
   loyaltyProgram: ethers.Contract | null;
   web3Handler: () => Promise<void>;
   disconnectWallet: () => void;
+  isInitialized: boolean;
 }>({
   account: "",
   marketplace: null,
@@ -18,6 +19,7 @@ export const Web3 = createContext<{
   loyaltyProgram: null,
   web3Handler: async () => {},
   disconnectWallet: () => {},
+  isInitialized: false,
 });
 
 const NFT_ADDRESS = process.env.NEXT_PUBLIC_NFT_ADDRESS || "";
@@ -32,6 +34,7 @@ export const Web3Provider = ({ children }: { children: React.ReactNode }) => {
   const [loyaltyProgram, setLoyaltyProgram] = useState<ethers.Contract | null>(
     null
   );
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Load contracts in read-only mode on initial load
   useEffect(() => {
@@ -79,11 +82,18 @@ export const Web3Provider = ({ children }: { children: React.ReactNode }) => {
             const provider = new ethers.BrowserProvider(window.ethereum);
             const signer = await provider.getSigner();
             await loadContracts(signer);
+          } else {
+            // Load contracts in read-only mode if no wallet is connected
+            await loadContractsReadOnly();
           }
         } catch (error) {
           console.error("Error checking wallet connection:", error);
+          await loadContractsReadOnly();
         }
+      } else {
+        await loadContractsReadOnly();
       }
+      setIsInitialized(true);
     };
 
     checkWalletConnection();
@@ -159,6 +169,7 @@ export const Web3Provider = ({ children }: { children: React.ReactNode }) => {
         loyaltyProgram,
         web3Handler,
         disconnectWallet,
+        isInitialized,
       }}
     >
       {children}

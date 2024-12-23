@@ -1,0 +1,65 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.2.0'
+    id 'io.spring.dependency-management' version '1.1.4'
+    id "org.web3j" version "4.12.2"
+    id "org.web3j.solidity" version "0.5.2"
+}
+
+group = 'com.energymarket'
+version = '0.1.0'
+sourceCompatibility = '21.0.5'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.web3j:core:4.12.2'
+    implementation 'org.postgresql:postgresql'
+    implementation 'org.projectlombok:lombok'
+    implementation 'com.squareup.okhttp3:okhttp:4.9.3'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
+    implementation 'org.springframework.boot:spring-boot-starter-cache'
+    implementation 'com.github.ben-manes.caffeine:caffeine:3.1.8'
+    annotationProcessor 'org.projectlombok:lombok'
+    
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.testcontainers:postgresql:1.19.3'
+}
+
+test {
+    useJUnitPlatform()
+} 
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+wrapper {
+    gradleVersion = '8.11.1'
+    distributionType = Wrapper.DistributionType.BIN
+}
+
+web3j {
+    generatedPackageName = 'com.energymarket.contracts'
+    includedContracts = ['EnergyMarketplace', 'EnergyNFT', 'LoyaltyProgram', 'ILoyaltyProgram']
+    useNativeJavaTypes = false
+    generatedFilesBaseDir = 'src'
+}
+
+// Make sure contract generation happens before compilation
+// tasks.named('compileJava').configure {
+//     dependsOn 'generateContractWrappers'
+// }
+
+// Add this configuration block
+tasks.withType(org.web3j.gradle.plugin.GenerateContractWrappers).configureEach {
+    dependsOn(tasks.processResources)
+}
