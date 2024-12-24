@@ -9,12 +9,10 @@ export const useBlockchainEvents = (marketplace: ethers.Contract | null) => {
   }, []);
 
   const handleNFTMinted = async (event: any) => {
-    console.log("Event NFTMintedAndListed is triggered");
     setShouldRefresh(true);
   };
 
   const handleNFTSold = async (event: any) => {
-    console.log("Event NFTSold is triggered");
     setShouldRefresh(true);
   };
 
@@ -22,7 +20,6 @@ export const useBlockchainEvents = (marketplace: ethers.Contract | null) => {
     if (!marketplace) {
       return;
     }
-    console.log("Subscribed NFTMintedAndListed and NFTSold");
     const nftMintedAndListed = marketplace.filters.NFTMintedAndListed();
     const nftSold = marketplace.filters.NFTSold();
     marketplace.on(nftMintedAndListed, handleNFTMinted);
@@ -30,7 +27,6 @@ export const useBlockchainEvents = (marketplace: ethers.Contract | null) => {
 
     // Cleanup function
     return () => {
-      console.log("Unsubscribed NFTMintedAndListed and NFTSold");
       marketplace.off(nftMintedAndListed, () => {});
       marketplace.off(nftSold, () => {});
     };

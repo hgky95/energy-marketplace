@@ -18,7 +18,6 @@ export const useLoyaltyPoints = (
   }, [account, loyaltyProgram]);
 
   const handlePointsAdded = async (event: any) => {
-    console.log("Event LoyaltyPointsAdded is triggered");
     if (event.args[0].toLowerCase() === account.toLowerCase()) {
       setPoints(Number(event.args[1]));
     }
@@ -32,11 +31,9 @@ export const useLoyaltyPoints = (
     fetchPoints();
 
     const pointsFilter = loyaltyProgram.filters.LoyaltyPointsAdded();
-    console.log("Subscribed LoyaltyPointsAdded");
     loyaltyProgram.on(pointsFilter, handlePointsAdded);
 
     return () => {
-      console.log("Unsubscribed LoyaltyPointsAdded");
       loyaltyProgram.off(pointsFilter, () => {});
     };
   }, [loyaltyProgram, account]);

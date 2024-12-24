@@ -88,8 +88,26 @@ export default function NFTCard({
         return;
       }
 
-      // convert price string to Wei
-      const priceInWei = ethers.parseEther(price.replace(" ETH", ""));
+      const cleanPrice = price.replace(" ETH", "").toLowerCase();
+      let priceInWei;
+      try {
+        if (cleanPrice.includes("e-")) {
+          // Handle scientific notation (e.g. 1e-7 ETH = 0.0000001 ETH)
+          const [base, exponent] = cleanPrice.split("e-");
+          const baseNum = parseFloat(base);
+          const exp = parseInt(exponent);
+          // Convert directly to wei by multiplying by 10^(18-exp)
+          // For 1e-7: 1 * 10^(18-7) = 1 * 10^11 wei
+          const weiExponent = 18 - exp;
+          priceInWei = ethers.getBigInt(
+            Math.floor(baseNum * Math.pow(10, weiExponent))
+          );
+        } else {
+          priceInWei = ethers.parseEther(cleanPrice);
+        }
+      } catch (error) {
+        throw new Error(`Invalid price format: ${cleanPrice}`);
+      }
 
       const transaction = await marketplace.buyNFT(id, {
         value: priceInWei,

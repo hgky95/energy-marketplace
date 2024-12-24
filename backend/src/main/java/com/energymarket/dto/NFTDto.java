@@ -14,5 +14,6 @@ public class NFTDto {
     private String seller;
     private String image;
     private String description;
+    private boolean isActive;
     private List<NFTAttributeDto> attributes;
 }

@@ -9,6 +9,7 @@ import org.web3j.protocol.Web3j;
 import org.web3j.protocol.http.HttpService;
 import org.web3j.tx.gas.ContractGasProvider;
 import org.web3j.tx.gas.StaticGasProvider;
+import com.energymarket.contracts.EnergyMarketplace;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -22,12 +23,18 @@ public class Web3Config {
     @Value("${blockchain.node.url}")
     private String blockchainNodeUrl;
     
-    // @Value("${blockchain.wallet.private-key}")
-    // private String privateKey;
+    @Value("${contract.marketplace.address}")
+    private String marketplaceAddress;
 
     @Bean
     public Web3j web3j() {
-        return Web3j.build(new HttpService(blockchainNodeUrl));
+        OkHttpClient client = new OkHttpClient.Builder()
+            .connectTimeout(90, TimeUnit.SECONDS)
+            .readTimeout(90, TimeUnit.SECONDS)
+            .writeTimeout(90, TimeUnit.SECONDS)
+            .build();
+        
+        return Web3j.build(new HttpService(blockchainNodeUrl, client));
     }
     
     @Bean
@@ -51,10 +58,19 @@ public class Web3Config {
     @Bean
     public OkHttpClient httpClient() {
         return new OkHttpClient.Builder()
-            .connectTimeout(60, TimeUnit.SECONDS)
-            .readTimeout(60, TimeUnit.SECONDS)
-            .writeTimeout(60, TimeUnit.SECONDS)
+            .connectTimeout(90, TimeUnit.SECONDS)
+            .readTimeout(90, TimeUnit.SECONDS)
+            .writeTimeout(90, TimeUnit.SECONDS)
             .build();
     }
     
+    @Bean
+    public EnergyMarketplace energyMarketplace(Web3j web3j, Credentials credentials, ContractGasProvider gasProvider) {
+        return EnergyMarketplace.load(
+            marketplaceAddress,
+            web3j,
+            credentials,
+            gasProvider
+        );
+    }
 } 

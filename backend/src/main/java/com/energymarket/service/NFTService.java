@@ -2,9 +2,6 @@ package com.energymarket.service;
 
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.web3j.abi.datatypes.generated.Uint256;
 import org.web3j.crypto.Credentials;
 import org.web3j.protocol.Web3j;
@@ -12,20 +9,26 @@ import org.web3j.tx.gas.DefaultGasProvider;
 import org.web3j.utils.Convert;
 
 import java.math.BigInteger;
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
-
 import com.energymarket.dto.NFTDto;
 import com.energymarket.dto.NFTMetadataDto;
+import com.energymarket.service.MarketplaceService.MarketplaceItem;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import jakarta.annotation.PreDestroy;
+import jakarta.annotation.PostConstruct;
+
 import com.energymarket.contracts.EnergyMarketplace;
 import com.energymarket.contracts.EnergyNFT;
 import org.springframework.data.domain.Page;
@@ -39,9 +42,13 @@ public class NFTService {
     private final Credentials credentials;
     private final OkHttpClient httpClient;
     private final ObjectMapper objectMapper;
+    private final ExecutorService executorService;
+    private final EnergyMarketplace marketplace;
+    private EnergyNFT nft;
     private final ConcurrentHashMap<String, BigInteger> itemCountCache = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<String, String> nftStatusCache = new ConcurrentHashMap<>();
     private static final List<NFTDto> DEFAULT_NFT_SUBLIST = new ArrayList<>();
+    private final NFTMetadataService nftMetadataService;
+    private final MarketplaceService marketplaceService;
     
     @Value("${contract.marketplace.address}")
     private String marketplaceAddress;
@@ -56,156 +63,141 @@ public class NFTService {
         Web3j web3j, 
         Credentials credentials, 
         OkHttpClient httpClient,
-        ObjectMapper objectMapper
+        ObjectMapper objectMapper,
+        NFTMetadataService nftMetadataService,
+        MarketplaceService marketplaceService,
+        EnergyMarketplace marketplace
     ) {
         this.web3j = web3j;
         this.credentials = credentials;
         this.httpClient = httpClient;
         this.objectMapper = objectMapper;
+        this.nftMetadataService = nftMetadataService;
+        this.executorService = Executors.newFixedThreadPool(3); //Can be adjusted but considering on system resources and node provider's throughput (429 issue)
+        this.marketplaceService = marketplaceService;
+        this.marketplace = marketplace;
     }
     
-    @Cacheable(value = "nftCache", 
-               key = "'nfts:' + #section + ':' + #account + ':' + #pageable.pageNumber + ':' + #pageable.pageSize", 
-               condition = "#root.target.isValidCacheForSection(#section, #account)")
+    @PostConstruct
+    private void init() {
+        this.nft = EnergyNFT.load(
+            nftAddress, web3j, credentials, new DefaultGasProvider()
+        );
+    }
+    
     public Page<NFTDto> getNFTs(String section, String account, Pageable pageable) {
         log.info("Fetching NFTs for section: {}, account: {}", section, account);
-        log.info("Page size: {}, offset: {}", pageable.getPageSize(), pageable.getOffset());
         try {
-            EnergyMarketplace marketplace = EnergyMarketplace.load(
-                marketplaceAddress, web3j, credentials, new DefaultGasProvider()
-            );
-            
             Uint256 currentItemCount = marketplace.itemCount().send();
             itemCountCache.put("itemCount", currentItemCount.getValue());
             
-            return fetchAndProcessNFTs(section, account, pageable, marketplace);
+            Page<NFTDto> nfts = fetchAndProcessNFTs(section, account, pageable, currentItemCount.getValue());
+            return nfts;
         } catch (Exception e) {
             log.error("Error fetching NFTs", e);
             throw new RuntimeException("Failed to fetch NFTs", e);
         }
     }
     
-    public boolean isValidCacheForSection(String section, String account) {
-        log.info("Checking cache validity for section: {} and account: {}", section, account);
-        try {
-            EnergyMarketplace marketplace = EnergyMarketplace.load(
-                marketplaceAddress, web3j, credentials, new DefaultGasProvider()
-            );
-            
-            BigInteger currentCount = marketplace.itemCount().send().getValue();
-            BigInteger cachedCount = itemCountCache.getOrDefault("itemCount", BigInteger.ZERO);
-            
-            if (!currentCount.equals(cachedCount)) {
-                return false;
-            }
-            
-            // For sections that depend on NFT ownership/status, check the latest state
-            String cacheKey = getCacheKey(section, account);
-            String cachedStatus = nftStatusCache.getOrDefault(cacheKey, "");
-            String currentStatus = calculateStatusHash(section, account, marketplace);
-            if (cachedStatus.isEmpty()) {
-                nftStatusCache.put(cacheKey, currentStatus);
-            }
-            
-            return cachedStatus.equals(currentStatus);
-        } catch (Exception e) {
-            log.error("Error validating cache for section: {} and account: {}", section, account, e);
-            return false;
-        }
-    }
-    
-    private String getCacheKey(String section, String account) {
-        return String.format("%s:%s", section, account);
-    }
-    
-    private String calculateStatusHash(String section, String account, EnergyMarketplace marketplace) throws Exception {
-        StringBuilder status = new StringBuilder();
-        Uint256 itemCount = marketplace.itemCount().send();
-        
-        // Only check relevant NFTs based on section
-        for (BigInteger i = BigInteger.ONE; i.compareTo(itemCount.getValue()) <= 0; i = i.add(BigInteger.ONE)) {
-            var item = marketplace.items(new Uint256(i)).send();
-            boolean isActive = item.component5().getValue();
-            String seller = item.component4().toString();
-            
-            if ("home".equals(section) && !seller.equalsIgnoreCase(account)) {
-                status.append(i).append(":").append(isActive).append(";");
-            } else if ("listing".equals(section) && seller.equalsIgnoreCase(account)) {
-                status.append(i).append(":").append(isActive).append(";");
-            } else if ("purchased".equals(section)) {
-                EnergyNFT nft = EnergyNFT.load(nftAddress, web3j, credentials, new DefaultGasProvider());
-                String owner = nft.ownerOf(new Uint256(i)).send().toString();
-                status.append(i).append(":").append(owner).append(";");
-            }
-        }
-        
-        return status.toString();
-    }
-
-    @Scheduled(fixedRate = 3600000)
-    @CacheEvict(value = "nftCache", allEntries = true)
-    public void clearCacheIfNeeded() {
-        log.debug("Clearing NFT cache...");
-        itemCountCache.clear();
-        nftStatusCache.clear();
-    }
-    
     private Page<NFTDto> fetchAndProcessNFTs(
         String section,
         String account,
         Pageable pageable,
-        EnergyMarketplace marketplace
+        BigInteger totalItems
     ) throws Exception {
-        EnergyNFT nft = EnergyNFT.load(
-            nftAddress, web3j, credentials, new DefaultGasProvider()
-        );
-
-        List<NFTDto> allNfts = new ArrayList<>();
-        Uint256 itemCount = marketplace.itemCount().send();
-
-        for (BigInteger i = BigInteger.ONE; 
-             i.compareTo(itemCount.getValue()) <= 0; 
-             i = i.add(BigInteger.ONE)) {
-            
-            var item = marketplace.items(new Uint256(i)).send();
-            
-            BigInteger tokenId = item.component1().getValue();
-            BigInteger price = item.component2().getValue();
-            BigInteger energyAmount = item.component3().getValue();
-            String seller = item.component4().toString();
-            boolean isActive = item.component5().getValue();
-
-            if (shouldIncludeNFT(section, account, seller, isActive, nft, tokenId)) {
-                String uri = nft.tokenURI(new Uint256(tokenId)).send().getValue();
-                NFTMetadataDto metadata = fetchMetadata(uri);
-                
-                NFTDto nftDto = NFTDto.builder()
-                    .id(tokenId.longValue())
-                    .title("Energy NFT #" + tokenId)
-                    .price(formatEther(price) + " ETH")
-                    .energyAmount(energyAmount.intValue())
-                    .seller(seller)
-                    .image(metadata.getImage())
-                    .description(metadata.getDescription())
-                    .attributes(metadata.getAttributes())
-                    .build();
-                    
-                allNfts.add(nftDto);
-            }
-        }
-
-        int start = (int) pageable.getOffset();
-        int end = Math.min((start + pageable.getPageSize()), allNfts.size());
-
-        if (start >= end) {
+        if (totalItems.equals(BigInteger.ZERO)) {
             return new PageImpl<>(DEFAULT_NFT_SUBLIST, pageable, 0);
         }
+
+        AtomicInteger totalValidNfts = new AtomicInteger(0);
+        List<CompletableFuture<NFTDto>> futures = new ArrayList<>();
+        List<NFTDto> pageItems = new ArrayList<>();
+
+        // Count total valid NFTs using parallel processing
+        int batchSize = 20;
+        List<CompletableFuture<Integer>> countFutures = new ArrayList<>();
         
-        return new PageImpl<>(
-            allNfts.subList(start, end),
-            pageable,
-            allNfts.size()
-        );
+        for (int i = 1; i <= totalItems.intValue(); i += batchSize) {
+            final int start = i;
+            final int end = Math.min(i + batchSize - 1, totalItems.intValue());
+            
+            CompletableFuture<Integer> batchCount = CompletableFuture.supplyAsync(() -> {
+                int count = 0;
+                for (int j = start; j <= end; j++) {
+                    try {
+                        BigInteger tokenId = BigInteger.valueOf(j);
+                        MarketplaceItem item = marketplaceService.fetchMarketplaceItem(tokenId);
+                        
+                        if (shouldIncludeNFT(section, account, item.seller(), item.isActive(), tokenId)) {
+                            count++;
+                        }
+                    } catch (Exception e) {
+                        log.error("Error processing token #{}", j, e);
+                    }
+                }
+                return count;
+            }, executorService);
+            
+            countFutures.add(batchCount);
+        }
+        
+        BigInteger currentId = BigInteger.ONE;
+        int start = pageable.getPageNumber() * pageable.getPageSize();
+        int currentCount = 0;
+        int collectedItems = 0;
+
+        // Collect only the items for the requested page
+        log.info("Start second pass");
+        while (currentId.compareTo(totalItems) <= 0 && collectedItems < pageable.getPageSize()) {
+            BigInteger tokenId = currentId;
+
+            MarketplaceItem item = marketplaceService.fetchMarketplaceItem(tokenId);
+            
+            if (shouldIncludeNFT(section, account, item.seller(), item.isActive(), tokenId)) {
+                if (currentCount >= start) {
+                    CompletableFuture<NFTDto> future = CompletableFuture.supplyAsync(() -> {
+                        try {
+                            String uri = nft.tokenURI(new Uint256(tokenId)).send().getValue();
+                            NFTMetadataDto metadata = nftMetadataService.fetchMetadata(uri);
+                            
+                            return NFTDto.builder()
+                                .id(tokenId.longValue())
+                                .title("Energy NFT #" + tokenId)
+                                .price(formatEther(item.price()) + " ETH")
+                                .energyAmount(item.energyAmount().intValue())
+                                .seller(item.seller())
+                                .image(metadata.getImage())
+                                .description(metadata.getDescription())
+                                .attributes(metadata.getAttributes())
+                                .isActive(item.isActive())
+                                .build();
+                        } catch (Exception e) {
+                            log.error("Error processing NFT #{}", tokenId, e);
+                            return null;
+                        }
+                    }, executorService);
+                    
+                    futures.add(future);
+                    collectedItems++;
+                }
+                currentCount++;
+            }
+            currentId = currentId.add(BigInteger.ONE);
+        }
+
+        // Wait for all counting tasks to complete and sum the results
+        int totalValidNftsCount = countFutures.stream()
+            .map(CompletableFuture::join)
+            .mapToInt(Integer::intValue)
+            .sum();
+        totalValidNfts.set(totalValidNftsCount);
+
+        pageItems = futures.stream()
+            .map(CompletableFuture::join)
+            .filter(dto -> dto != null)
+            .collect(Collectors.toList());
+
+        return new PageImpl<>(pageItems, pageable, totalValidNfts.get());
     }
     
     private boolean shouldIncludeNFT(
@@ -213,50 +205,31 @@ public class NFTService {
         String account, 
         String seller, 
         boolean isActive,
-        EnergyNFT nft,
         BigInteger tokenId
-    ) throws Exception {
-        if ("home".equals(section)) {
-            return isActive && (account == null || account.isEmpty() || !seller.equalsIgnoreCase(account));
-        } else if ("listing".equals(section)) {
-            return isActive && seller.equalsIgnoreCase(account);
-        } else if ("purchased".equals(section)) {
-            if (!isActive) {
-                String owner = nft.ownerOf(new Uint256(tokenId)).send().toString();
-                return owner.equalsIgnoreCase(account);
+    ) {
+        try {
+            if ("home".equals(section)) {
+                return isActive && (account == null || account.isEmpty() || !seller.equalsIgnoreCase(account));
+            } else if ("listing".equals(section)) {
+                return isActive && seller.equalsIgnoreCase(account);
+            } else if ("purchased".equals(section)) {
+                if (!isActive && !seller.equalsIgnoreCase(account)) {
+                    String currentOwner = nft.ownerOf(new Uint256(tokenId)).send().toString();
+                    return currentOwner.equalsIgnoreCase(account);
+                }
             }
+        } catch (Exception e) {
+            log.error("Error checking NFT inclusion for #{}", tokenId, e);
         }
         return false;
     }
     
-    private NFTMetadataDto fetchMetadata(String uri) {
-        try {
-            String ipfsUri = uri.replace("ipfs://", ipfsGateway);
-            
-            Request request = new Request.Builder()
-                .url(ipfsUri)
-                .get()
-                .build();
-
-            try (Response response = httpClient.newCall(request).execute()) {
-                if (!response.isSuccessful()) {
-                    throw new IOException("Unexpected response code: " + response);
-                }
-
-                String responseBody = response.body().string();
-                return objectMapper.readValue(responseBody, NFTMetadataDto.class);
-            }
-        } catch (Exception e) {
-            log.error("Error fetching metadata from {}", uri, e);
-            return NFTMetadataDto.builder()
-                .description("")
-                .image("")
-                .attributes(new ArrayList<>())
-                .build();
-        }
-    }
-    
     private String formatEther(BigInteger wei) {
         return Convert.fromWei(new BigDecimal(wei), Convert.Unit.ETHER).toString();
+    }
+
+    @PreDestroy
+    public void cleanup() {
+        executorService.shutdown();
     }
 }
