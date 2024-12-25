@@ -10,7 +10,12 @@ A decentralized marketplace for trading energy NFTs with an integrated loyalty p
 - **Web3 Integration**: Connect with MetaMask and other Web3 wallets
 
 ## Architecture
-![energy-nft-flow-chart-main drawio](https://github.com/user-attachments/assets/4bc668fe-282c-451b-abfa-66707e829b27)
+
+![energy-nft-flow-chart-main drawio](https://github.com/user-attachments/assets/3ebf1f29-0c93-43c6-a825-63c0f6e5f0d8)
+
+## Demonstation
+
+Here is the demo video: [Youtube](https://youtu.be/Rza_KoaK9N4)
 
 ## Technology Stack
 
@@ -25,9 +30,16 @@ A decentralized marketplace for trading energy NFTs with an integrated loyalty p
 - Solidity
 - Foundry
 
+### Backend
+
+- Java
+- Spring Boot
+- Gradle
+
 ## Prerequisites
 
 - Node.js 18+
+- Java 21.0.5
 - Foundry
 - MetaMask or another Web3 wallet
 
@@ -39,68 +51,19 @@ A decentralized marketplace for trading energy NFTs with an integrated loyalty p
 git clone https://github.com/hgky95/energy-marketplace
 ```
 
-2. Install frontend dependencies:
+2. Define the private key in the .env file (local development only):
 
 ```bash
-cd frontend
-npm install
+PRIVATE_KEY=
 ```
 
-3. Install smart contract dependencies:
+    Note: To prevent the leak of the private key, please use 'cast wallet import <name> --interactive' to import the private key into the wallet.
+    Refer to [Import Key](https://book.getfoundry.sh/reference/cast/cast-wallet-import) for more details.
+
+3. Using docker-compose to start the blockchain node, backend, and frontend:
 
 ```bash
-cd smartcontract
-forge install
+docker-compose up
 ```
 
-## Start the development server:
-
-### Frontend
-
-```bash
-cd frontend
-npm run dev
-```
-
-The application will be available at `http://localhost:3000`
-
-### Smart Contracts
-
-1. Compile contracts:
-
-```bash
-cd smartcontract
-forge build
-```
-
-2. Deploy contracts:
-
-```bash
-forge script script/Deployment.s.sol --rpc-url <your-rpc-url> --private-key <your-private-key>
-```
-
-## Deployment
-
-1. Deploy smart contracts to your chosen network:
-
-```bash
-cd smartcontract
-forge script script/Deployment.s.sol --rpc-url <your-rpc-url> --private-key <your-private-key> --broadcast
-```
-
-2. Update frontend contract addresses:
-
-- Copy the deployed contract addresses
-- Update the addresses in your frontend environment variables
-
-3. Deploy frontend:
-
-```bash
-cd frontend
-npm run build
-npm run start
-```
-
-## User Interfaces
-![nft-listing](https://github.com/user-attachments/assets/048dc673-c9b4-4e5e-ad3b-943461630feb)
-![mint-nft](https://github.com/user-attachments/assets/db040acc-b7fc-4366-8cbb-080d9cdcb3c5)
+3. The application will be available at http://localhost:3000
