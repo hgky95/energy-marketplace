@@ -13,7 +13,7 @@ A decentralized marketplace for trading energy NFTs with an integrated loyalty p
 
 ![energy-nft-flow-chart-main drawio](https://github.com/user-attachments/assets/3ebf1f29-0c93-43c6-a825-63c0f6e5f0d8)
 
-## Demonstation
+## Demonstration
 
 Here is the demo video: [Youtube](https://youtu.be/Rza_KoaK9N4)
 
