@@ -63,3 +63,10 @@ web3j {
 tasks.withType(org.web3j.gradle.plugin.GenerateContractWrappers).configureEach {
     dependsOn(tasks.processResources)
 }
+
+// For docker-compose build compatibility with GLIBC
+node {
+    version = "14.21.3"
+    npmVersion = "6.14.18"
+    download = true
+}

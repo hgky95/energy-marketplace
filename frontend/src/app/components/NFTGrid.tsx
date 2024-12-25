@@ -93,7 +93,7 @@ export default function NFTGrid({ section }: NFTGridProps) {
     }
   }, [pagination.page, pagination.size, section, account, isInitialized]);
 
-  // Add pagination controls
+  // Pagination controls
   const handlePageChange = (newPage: number) => {
     setPagination((prev) => ({
       ...prev,
@@ -114,7 +114,7 @@ export default function NFTGrid({ section }: NFTGridProps) {
       const timer = setTimeout(() => {
         loadNFTs();
         resetRefreshFlag();
-      }, 10000);
+      }, 5000);
 
       return () => clearTimeout(timer);
     }

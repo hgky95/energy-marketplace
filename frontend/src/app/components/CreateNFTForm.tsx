@@ -60,7 +60,6 @@ export default function CreateNFTForm() {
       const data = await response.json();
 
       if (response.ok) {
-        console.log("Uploaded to IPFS, IPFS hash:", data.ipfsHash);
         return data.ipfsHash;
       } else {
         throw new Error("Error uploading to IPFS");

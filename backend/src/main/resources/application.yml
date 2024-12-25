@@ -12,9 +12,6 @@ spring:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
-  redis:
-    host: ${SPRING_REDIS_HOST:localhost}
-    port: ${SPRING_REDIS_PORT:6379}
 
 logging:
   level:
@@ -39,6 +36,10 @@ app:
   pagination:
     default-page-size: 20
     max-page-size: 100
+
+cache:
+  evict:
+    rate: 3600000 # 1 hour
 
 blockchain:
   node:
