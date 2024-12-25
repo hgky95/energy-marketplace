@@ -1,8 +1,8 @@
 import { useState, createContext, useEffect } from "react";
 import { ethers } from "ethers";
-import MarketplaceAbi from "../../contracts/MarketplaceAbi.json";
-import NFTAbi from "../../contracts/NFTAbi.json";
-import LoyaltyProgramAbi from "../../contracts/LoyaltyProgramABI.json";
+import MarketplaceABI from "../../contracts/MarketplaceABI.json";
+import NFTABI from "../../contracts/NFTABI.json";
+import LoyaltyProgramABI from "../../contracts/LoyaltyProgramABI.json";
 
 export const Web3 = createContext<{
   account: string;
@@ -50,17 +50,17 @@ export const Web3Provider = ({ children }: { children: React.ReactNode }) => {
 
       const marketplace = new ethers.Contract(
         MARKETPLACE_ADDRESS,
-        MarketplaceAbi,
+        MarketplaceABI,
         provider
       );
       setMarketplace(marketplace);
 
-      const nft = new ethers.Contract(NFT_ADDRESS, NFTAbi, provider);
+      const nft = new ethers.Contract(NFT_ADDRESS, NFTABI, provider);
       setNFT(nft);
 
       const loyaltyProgram = new ethers.Contract(
         LOYALTY_PROGRAM_ADDRESS,
-        LoyaltyProgramAbi,
+        LoyaltyProgramABI,
         provider
       );
       setLoyaltyProgram(loyaltyProgram);
@@ -135,17 +135,17 @@ export const Web3Provider = ({ children }: { children: React.ReactNode }) => {
     try {
       const marketplace = new ethers.Contract(
         MARKETPLACE_ADDRESS,
-        MarketplaceAbi,
+        MarketplaceABI,
         signer
       );
       setMarketplace(marketplace);
 
-      const nft = new ethers.Contract(NFT_ADDRESS, NFTAbi, signer);
+      const nft = new ethers.Contract(NFT_ADDRESS, NFTABI, signer);
       setNFT(nft);
 
       const loyaltyProgram = new ethers.Contract(
         LOYALTY_PROGRAM_ADDRESS,
-        LoyaltyProgramAbi,
+        LoyaltyProgramABI,
         signer
       );
       setLoyaltyProgram(loyaltyProgram);
