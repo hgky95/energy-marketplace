@@ -5,7 +5,6 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import {EnergyNFT} from "./EnergyNFT.sol";
 import {ILoyaltyProgram} from "./ILoyaltyProgram.sol";
-import {console} from "forge-std/console.sol";
 
 contract EnergyMarketplace is ReentrancyGuard, Ownable {
     uint8 public constant DEFAULT_BASE_COMMISSION_RATE = 1;
@@ -98,7 +97,6 @@ contract EnergyMarketplace is ReentrancyGuard, Ownable {
         emit NFTSold(_tokenId, seller, msg.sender, price, fee);
     }
 
-    // Rest of your existing functions...
     function updateCommissionRate(uint8 _newCommissionRate) external onlyOwner {
         require(
             _newCommissionRate > 0,

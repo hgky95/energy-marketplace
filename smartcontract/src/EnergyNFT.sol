@@ -36,7 +36,7 @@ contract EnergyNFT is ERC721URIStorage, Ownable {
         emit MarketplaceAddressUpdated(_marketplaceAddress);
     }
 
-    //TODO this method should be interact with trusted oracle
+    //Note: this method should be interact with trusted oracle, currently it's just for demo purpose
     function produceEnergy(
         address user,
         uint256 _energyAmount
