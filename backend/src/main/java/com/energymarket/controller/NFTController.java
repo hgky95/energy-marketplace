@@ -17,8 +17,8 @@ public class NFTController {
     
     @GetMapping
     public Page<NFTDto> getListedNFTs(
-        @RequestParam(defaultValue = "home") String section,
-        @RequestParam(required = false) String account,
+        @RequestParam(name = "section", defaultValue = "home") String section,
+        @RequestParam(name = "account", required = false) String account,
         Pageable pageable
     ) {
         return nftService.getNFTs(section, account, pageable);

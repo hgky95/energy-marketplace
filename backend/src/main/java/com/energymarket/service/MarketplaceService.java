@@ -18,7 +18,7 @@ public class MarketplaceService {
         this.marketplace = marketplace;
     }
 
-    @Cacheable(value = "marketplaceItems", key = "#tokenId")
+    @Cacheable(value = "marketplaceItems", key = "#p0")
     public MarketplaceItem fetchMarketplaceItem(BigInteger tokenId) throws Exception {
         var item = marketplace.items(new Uint256(tokenId)).send();
         
@@ -30,7 +30,7 @@ public class MarketplaceService {
         );
     }
 
-    @CacheEvict(value = "marketplaceItems", key = "#tokenId")
+    @CacheEvict(value = "marketplaceItems", key = "#p0")
     public void evictItem(BigInteger tokenId) {
         log.info("Evicting cache for marketplace item #{}", tokenId);
     }

@@ -25,7 +25,7 @@ public class NFTMetadataService {
         this.objectMapper = objectMapper;
     }
 
-    @Cacheable(value = "nftMetadataCache", key = "#uri")
+    @Cacheable(value = "nftMetadataCache", key = "#p0")
     public NFTMetadataDto fetchMetadata(String uri) {
         try {
             Request request = new Request.Builder()
