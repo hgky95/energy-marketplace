@@ -6,6 +6,7 @@ import { Web3 } from "./Web3";
 import { useBlockchainEvents } from "../../hooks/useBlockchainEvents";
 import { ethers } from "ethers";
 import * as APP_CONSTANT from "../../constants/AppConstant";
+import Bridge from "./Bridge";
 
 interface NFTMetadata {
   description: string;
@@ -103,7 +104,11 @@ export default function NFTGrid({ section }: NFTGridProps) {
 
   // Load NFTs on initial render and when section changes
   useEffect(() => {
-    if (section !== APP_CONSTANT.CREATE_MENU_ID && isInitialized) {
+    if (
+      section !== APP_CONSTANT.CREATE_MENU_ID &&
+      section !== APP_CONSTANT.BRIDGE_MENU_ID &&
+      isInitialized
+    ) {
       loadNFTs();
     }
   }, [loadNFTs, section, isInitialized]);
@@ -130,6 +135,10 @@ export default function NFTGrid({ section }: NFTGridProps) {
 
   if (section === APP_CONSTANT.CREATE_MENU_ID) {
     return <CreateNFTForm />;
+  }
+
+  if (section === APP_CONSTANT.BRIDGE_MENU_ID) {
+    return <Bridge />;
   }
 
   if (loading) {

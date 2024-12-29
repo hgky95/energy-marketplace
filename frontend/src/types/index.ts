@@ -28,3 +28,11 @@ export interface NFTCardProps {
   energyAmount: number;
   seller: string;
 }
+
+export interface BridgeTransaction {
+  sourceChain: number;
+  destinationChain: number;
+  amount: string;
+  token: string;
+  recipient: string;
+}

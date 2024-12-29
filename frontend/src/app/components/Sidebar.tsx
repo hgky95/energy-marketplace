@@ -9,7 +9,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { InfoIcon } from "lucide-react";
+import { InfoIcon, Wallet } from "lucide-react";
 import * as APP_CONSTANT from "../../constants/AppConstant";
 
 interface Discount {
@@ -88,6 +88,11 @@ const menuItems = [
     id: APP_CONSTANT.PURCHASED_MENU_ID,
     label: APP_CONSTANT.PURCHASED_MENU_LABEL,
   },
+  {
+    id: APP_CONSTANT.BRIDGE_MENU_ID,
+    label: APP_CONSTANT.BRIDGE_MENU_LABEL,
+    icon: Wallet,
+  },
 ];
 
 export default function Sidebar({
@@ -117,6 +122,7 @@ export default function Sidebar({
                 APP_CONSTANT.CREATE_MENU_ID,
                 APP_CONSTANT.LISTING_MENU_ID,
                 APP_CONSTANT.PURCHASED_MENU_ID,
+                APP_CONSTANT.BRIDGE_MENU_ID,
               ].includes(item.id)
                 ? "cursor-not-allowed opacity-50"
                 : ""
@@ -127,6 +133,7 @@ export default function Sidebar({
                 APP_CONSTANT.CREATE_MENU_ID,
                 APP_CONSTANT.LISTING_MENU_ID,
                 APP_CONSTANT.PURCHASED_MENU_ID,
+                APP_CONSTANT.BRIDGE_MENU_ID,
               ].includes(item.id)
             }
           >

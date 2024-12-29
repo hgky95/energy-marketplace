@@ -123,7 +123,11 @@ export default function NFTCard({
       // }
     } catch (error: any) {
       console.error("Error buying NFT:", error);
-      alert(`Failed to purchase NFT: ${error.message}`);
+      if (error.message.includes("UNSUPPORTED_OPERATION")) {
+        alert(`Failed to purchase NFT: Please use Base Chain`);
+      } else {
+        alert(`Failed to purchase NFT: ${error.message}`);
+      }
     } finally {
       setIsLoading(false);
     }
