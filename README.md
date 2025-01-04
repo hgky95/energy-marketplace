@@ -6,6 +6,7 @@ A decentralized marketplace for trading energy NFTs with an integrated loyalty p
 
 - **Energy NFT Minting**: Users can mint NFTs representing their energy production
 - **NFT Marketplace**: Trade energy NFTs with other users
+- **Cross-chain bridge**: Bridge asset (ETH) from source chains (Ethereum, Optimism, Arbitrum, etc) to destination chain (Base), powered by Across Protocol
 - **Loyalty Program**: Earn points from marketplace activities and receive trading fee discounts
 - **Web3 Integration**: Connect with MetaMask and other Web3 wallets
 
