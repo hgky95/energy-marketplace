@@ -12,6 +12,7 @@ export const Web3 = createContext<{
   web3Handler: () => Promise<void>;
   disconnectWallet: () => void;
   isInitialized: boolean;
+  currentChainId: number | null;
 }>({
   account: "",
   marketplace: null,
@@ -20,6 +21,7 @@ export const Web3 = createContext<{
   web3Handler: async () => {},
   disconnectWallet: () => {},
   isInitialized: false,
+  currentChainId: null,
 });
 
 const NFT_ADDRESS = process.env.NEXT_PUBLIC_NFT_ADDRESS || "";
@@ -35,6 +37,7 @@ export const Web3Provider = ({ children }: { children: React.ReactNode }) => {
     null
   );
   const [isInitialized, setIsInitialized] = useState(false);
+  const [currentChainId, setCurrentChainId] = useState<number | null>(null);
 
   // Load contracts in read-only mode on initial load
   useEffect(() => {
@@ -74,6 +77,7 @@ export const Web3Provider = ({ children }: { children: React.ReactNode }) => {
     const checkWalletConnection = async () => {
       if (window.ethereum) {
         try {
+          await updateChainId();
           const accounts = await window.ethereum.request({
             method: "eth_accounts",
           });
@@ -99,6 +103,29 @@ export const Web3Provider = ({ children }: { children: React.ReactNode }) => {
     checkWalletConnection();
   }, []);
 
+  const updateChainId = async () => {
+    if (window.ethereum) {
+      const chainId = await window.ethereum.request({ method: "eth_chainId" });
+      setCurrentChainId(parseInt(chainId, 16));
+    }
+  };
+
+  // Update the chainChanged listener
+  useEffect(() => {
+    if (window.ethereum) {
+      window.ethereum.on("chainChanged", (chainId: string) => {
+        setCurrentChainId(parseInt(chainId, 16));
+        loadContractsReadOnly();
+      });
+    }
+
+    return () => {
+      if (window.ethereum) {
+        window.ethereum.removeListener("chainChanged", updateChainId);
+      }
+    };
+  }, []);
+
   const web3Handler = async () => {
     try {
       const accounts = await window.ethereum.request({
@@ -109,9 +136,9 @@ export const Web3Provider = ({ children }: { children: React.ReactNode }) => {
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
 
-      window.ethereum.on("chainChanged", () => {
-        window.location.reload();
-      });
+      // window.ethereum.on("chainChanged", () => {
+      //   window.location.reload();
+      // });
 
       window.ethereum.on(
         "accountsChanged",
@@ -170,6 +197,7 @@ export const Web3Provider = ({ children }: { children: React.ReactNode }) => {
         web3Handler,
         disconnectWallet,
         isInitialized,
+        currentChainId,
       }}
     >
       {children}
