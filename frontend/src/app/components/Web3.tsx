@@ -116,6 +116,9 @@ export const Web3Provider = ({ children }: { children: React.ReactNode }) => {
       window.ethereum.on("chainChanged", (chainId: string) => {
         setCurrentChainId(parseInt(chainId, 16));
         loadContractsReadOnly();
+        window.ethereum.on("chainChanged", () => {
+          window.location.reload();
+        });
       });
     }
 
